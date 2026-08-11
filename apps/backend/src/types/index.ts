@@ -1,13 +1,14 @@
-export enum ExpenseCategory {
-    FOOD = 'food',
-    TRANSPORT = 'transport',
-    UTILITIES = 'utilities',
-    ENTERTAINMENT = 'entertainment',
-    HEALTHCARE = 'healthcare',
-    SHOPPING = 'shopping',
-    EDUCATION = 'education',
-    OTHER = 'other',
-}
+export const ExpenseCategory = {
+    FOOD: 'food',
+    TRANSPORT: 'transport',
+    UTILITIES: 'utilities',
+    ENTERTAINMENT: 'entertainment',
+    HEALTHCARE: 'healthcare',
+    SHOPPING: 'shopping',
+    EDUCATION: 'education',
+    OTHER: 'other',
+} as const;
+export type ExpenseCategory = (typeof ExpenseCategory)[keyof typeof ExpenseCategory];
 
 export interface Expenses {
     id: string;
