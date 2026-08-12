@@ -1,0 +1,27 @@
+{
+  "name": "@spndex/zod",
+  "version": "1.0.0",
+  "description": "Package which exports all Spndex zod schemas and types",
+  "type": "module",
+  "scripts": {
+    "build": "tsc && tsc-alias",
+    "dev": "tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.4",
+    "tsc-alias": "^1.9.1",
+    "typescript": "^6.0.3"
+  }
+}
