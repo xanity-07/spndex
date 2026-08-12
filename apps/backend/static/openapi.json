@@ -1,0 +1,117 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Spndex REST API - Documentation",
+    "description": "Spndex REST API - Documentation"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Server"
+    }
+  ],
+  "paths": {
+    "/status": {
+      "get": {
+        "summary": "Get health",
+        "description": "Get health status",
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "unhealthy"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string"
+                    },
+                    "environment": {
+                      "type": "string"
+                    },
+                    "checks": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string"
+                            },
+                            "response_time": {
+                              "type": "string"
+                            },
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "response_time"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "redis": {
+                          "type": "object",
+                          "properties": {
+                            "status": {
+                              "type": "string"
+                            },
+                            "response_time": {
+                              "type": "string"
+                            },
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "response_time"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "database"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "timestamp",
+                    "environment",
+                    "checks"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "x-service-token": {
+        "type": "apiKey",
+        "name": "x-service-token",
+        "in": "header"
+      }
+    }
+  }
+}
