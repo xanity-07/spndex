@@ -5,8 +5,8 @@ const openApiConfig: ZodOpenApiObject = {
     openapi: '3.1.0',
     info: {
         version: '1.0.0',
-        title: 'AcademyOS REST API - Documentation',
-        description: 'AcademyOS REST API - Documentation',
+        title: 'Spndex REST API - Documentation',
+        description: 'Spndex REST API - Documentation',
     },
     servers: [
         {

@@ -1,4 +1,4 @@
-import { ZHealthResponse } from '@academyos/zod';
+import { ZHealthResponse } from '@spndex/zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { getSecurityMetadata } from '../utils.js';
 
