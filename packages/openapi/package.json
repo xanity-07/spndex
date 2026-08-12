@@ -1,0 +1,33 @@
+{
+  "name": "@spndex/openapi",
+  "version": "1.0.0",
+  "description": "Generates OpenAPI doc",
+  "type": "module",
+  "scripts": {
+    "gen": "tsx src/gen.ts",
+    "build": "tsc && tsc-alias",
+    "dev": "wait-on ../zod/dist/index.js && tsc && (concurrently \"tsc -w\" \"tsc-alias -w\")",
+    "clean": "rimraf dist tsconfig.tsbuildinfo .turbo node_modules"
+  },
+  "dependencies": {
+    "@spndex/zod": "workspace:*",
+    "zod": "^4.4.3",
+    "zod-openapi": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "concurrently": "^10.0.4",
+    "tsc-alias": "^1.9.1",
+    "tsx": "^4.23.12",
+    "typescript": "^6.0.3"
+  },
+  "exports": {
+    "./contracts": {
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contract/index.js"
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
