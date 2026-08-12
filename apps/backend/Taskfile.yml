@@ -1,0 +1,58 @@
+version: "3"
+
+env:
+  PATH: "{{.HOME}}/go/bin:{{.PATH}}"
+
+vars:
+  SPNDEX_DB_DSN: '{{.SPNDEX_DB_DSN | default ""}}'
+
+tasks:
+  help:
+    desc: print this help message
+    cmds:
+      - task --list-all
+    silent: true
+
+  confirm:
+    desc: confirmation prompt
+    cmds:
+      - |
+        echo -n 'Are you sure? [y/N] ' && read ans && [ ${ans:-N} = y ]
+    silent: true
+    internal: true
+
+  run:
+    desc: run the cmd/spndex application
+    cmds:
+      - go run ./cmd/spndex/main.go
+
+  migrations:new:
+    desc: create a new database migration
+    vars:
+      NAME: '{{.name | default ""}}'
+    cmds:
+    - |
+      if [ -z "{{.NAME}}" ]; then
+        echo "Usage: task migrations:new name=migration_name"
+        exit 1
+      fi
+    - echo 'Creating migration file for {{.NAME}}...'
+    - tern new -m ./internal/database/migrations {{.NAME}}
+
+  migrations:up:
+    desc: apply all up database migrations
+    deps: [ confirm ]
+    dotenv: [".env"]
+    cmds:
+    - echo 'Running up migrations...'
+    - tern migrate -m ./internal/database/migrations --conn-string "$TERN_DSN"
+
+  tidy:
+    desc: format all .go files, and tidy and vendor module dependencies
+    cmds:
+      - echo 'Formatting .go files...'
+      - go fmt ./...
+      - echo 'Tidying module dependencies...'
+      - go mod tidy
+      - echo 'Verifying dependencies...'
+      - go mod verify
