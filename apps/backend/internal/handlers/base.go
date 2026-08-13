@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/newrelic/go-agent/v3/integrations/nrpkgerrors"
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/xanity-07/spndex/internal/errs"
 	"github.com/xanity-07/spndex/internal/middleware"
 	"github.com/xanity-07/spndex/internal/server"
 	"github.com/xanity-07/spndex/internal/validation"
@@ -25,16 +26,16 @@ func NewHandler(s *server.Server) Handler {
 }
 
 // HandlerFunc represents a typed handler function that processes a request and returns a response
-type HandlerFunc[Req validation.Validatable, Res any] func(c *gin.Context, payload Req) (Req, error)
+type HandlerFunc[Req validation.Validatable, Res any] func(c *gin.Context, payload Req) (Res, error)
 
 // HandlerFuncNoContent represents a typed handler function that processes a request without returning content
 type HandlerFuncNoContent[Req validation.Validatable] func(c *gin.Context, payload Req) error
 
 // ResponseHandler defines the interface for handling different response types
 type ResponseHandler interface {
-	Handle(c *gin.Context, result interface{})
+	Handle(c *gin.Context, result any)
 	GetOperation() string
-	AddAttribute(txn *newrelic.Transaction, result interface{})
+	AddAttribute(txn *newrelic.Transaction, result any)
 }
 
 // JSONResponseHandler handles JSON responses
@@ -42,7 +43,7 @@ type JSONResponseHandler struct {
 	status int
 }
 
-func (h JSONResponseHandler) Handle(c *gin.Context, result interface{}) {
+func (h JSONResponseHandler) Handle(c *gin.Context, result any) {
 	c.JSON(h.status, result)
 }
 
@@ -50,7 +51,7 @@ func (h JSONResponseHandler) GetOperation() string {
 	return "handler"
 }
 
-func (h JSONResponseHandler) AddAttribute(txn *newrelic.Transaction, result interface{}) {
+func (h JSONResponseHandler) AddAttribute(txn *newrelic.Transaction, result any) {
 	// http.status_code is already set by tracing middleware
 }
 
@@ -59,7 +60,7 @@ type NoContentResponseHandler struct {
 	status int
 }
 
-func (h NoContentResponseHandler) Handle(c *gin.Context, result interface{}) {
+func (h NoContentResponseHandler) Handle(c *gin.Context, result any) {
 	c.Status(http.StatusNoContent)
 }
 
@@ -67,7 +68,7 @@ func (h NoContentResponseHandler) GetOperation() string {
 	return "handler"
 }
 
-func (h NoContentResponseHandler) AddAttribute(txn *newrelic.Transaction, result interface{}) {
+func (h NoContentResponseHandler) AddAttribute(txn *newrelic.Transaction, result any) {
 	// http.status_code is already set by tracing middleware
 }
 
@@ -75,7 +76,7 @@ func (h NoContentResponseHandler) AddAttribute(txn *newrelic.Transaction, result
 func handleRequest[Req validation.Validatable](
 	c *gin.Context,
 	payload Req,
-	handler func(c *gin.Context, result Req) (interface{}, error),
+	handler func(c *gin.Context, result Req) (any, error),
 	responseHandler ResponseHandler,
 ) {
 	start := time.Now()
@@ -111,11 +112,12 @@ func handleRequest[Req validation.Validatable](
 		logger.Error().
 			Err(err).
 			Dur("validation_duration", validationDuration).
-			Msg("request validation failed ")
+			Msg("request validation failed")
 
 		if txn != nil {
 			txn.NoticeError(nrpkgerrors.Wrap(err))
 			txn.AddAttribute("validation.status", "failed")
+
 			txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
 		}
 		return
@@ -127,7 +129,7 @@ func handleRequest[Req validation.Validatable](
 		txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
 	}
 
-	logger.Debug().
+	logger.Info().
 		Dur("validation_duration", validationDuration).
 		Msg("request validation success")
 
@@ -151,6 +153,7 @@ func handleRequest[Req validation.Validatable](
 			txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
 			txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
 		}
+		errs.WriteHTTPError(c, err)
 		return
 	}
 

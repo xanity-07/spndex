@@ -1,6 +1,12 @@
 package errs
 
-import "strings"
+import (
+	"errors"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
 
 // Form fields related errors
 type FieldError struct {
@@ -53,4 +59,15 @@ func (e *AppError) WithMessage(message string) *AppError {
 // MakeUpperCaseWithUnderscores returns a HTTP status with format example: "BAD_REQUEST"
 func MakeUpperCaseWithUnderscores(status string) string {
 	return strings.ToUpper(strings.ReplaceAll(status, "", "_"))
+}
+
+func WriteHTTPError(c *gin.Context, err error) {
+	var appErr *AppError
+
+	if errors.As(err, &appErr) {
+		c.AbortWithStatusJSON(appErr.Status, appErr)
+		return
+	}
+
+	c.AbortWithStatusJSON(http.StatusInternalServerError, NewInternalServerError())
 }

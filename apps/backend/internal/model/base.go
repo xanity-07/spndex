@@ -1,9 +1,13 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type BaseWithID struct {
-	ID string `json:"id" db:"id"`
+	ID uuid.UUID `json:"id" db:"id"`
 }
 
 type BaseWithCreatedAt struct {

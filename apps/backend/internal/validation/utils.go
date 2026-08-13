@@ -1,13 +1,16 @@
 package validation
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/xanity-07/spndex/internal/errs"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Whatever data type implements this Validate() error method will satisfy this interface
@@ -29,21 +32,20 @@ func (c CustomValidationErrors) Error() string {
 }
 
 func BindAndValidate(c *gin.Context, payload Validatable) error {
-	if err := c.Bind(payload); err != nil {
-		message := strings.Split(strings.Split(err.Error(), ",")[1], "message=")[1]
-		return errs.NewBadRequestError(message, true, nil, nil, nil)
+	if err := c.ShouldBind(payload); err != nil {
+		return errs.NewBadRequestError(fmt.Sprintf("binding failed for %T: %v", payload, err), true, nil, nil, nil)
 	}
 
 	// After we have a native data type of Go we take this data type and
 	// validate it against a set of rules
 	if msg, fieldErrors := validateStruct(payload); fieldErrors != nil {
-		return errs.NewBadRequestError(msg, true, nil, fieldErrors, nil)
+		return errs.NewBadRequestError(fmt.Sprintf("validation failed for %T: %s", payload, msg), true, nil, fieldErrors, nil)
 	}
 	return nil
 }
 
 func BindAndValidateQuery(c *gin.Context, query Validatable) error {
-	if err := c.Bind(query); err != nil {
+	if err := c.ShouldBind(query); err != nil {
 		return errs.NewBadRequestError("Invalid query parameters", false, nil, nil, nil)
 	}
 
@@ -66,68 +68,191 @@ func validateStruct(v Validatable) (string, []errs.FieldError) {
 // so that we can send them to the client
 func extractValidationErrors(err error) (string, []errs.FieldError) {
 	var fieldErrors []errs.FieldError
-	// Check if the error is from validator package if not its a CustumValidationErrors
+
+	// Check if the error is from validator package
 	validationErrors, ok := err.(validator.ValidationErrors)
-	if !ok {
-		// Check if the type is CustomValidationErrors
-		// loop through all the validation errors and append it into the field error slice
-		customValidationErrors := err.(CustomValidationErrors)
-		for _, err := range customValidationErrors {
-			fieldErrors = append(fieldErrors,
-				errs.FieldError{
-					Field: err.Field,
-					Error: err.Message,
-				},
-			)
+	if ok {
+		// Check for validator struct tags errors
+		for _, validationErr := range validationErrors {
+			field := strings.ToLower(validationErr.Field())
+			var msg string
+
+			switch validationErr.Tag() {
+			case "required":
+				msg = "is required"
+
+			case "min":
+				if validationErr.Type().Kind() == reflect.String {
+					msg = fmt.Sprintf(
+						"must be at least %s characters",
+						validationErr.Param(),
+					)
+				} else {
+					msg = fmt.Sprintf(
+						"must be at least %s",
+						validationErr.Param(),
+					)
+				}
+
+			case "max":
+				if validationErr.Type().Kind() == reflect.String {
+					msg = fmt.Sprintf(
+						"must not exceed %s characters",
+						validationErr.Param(),
+					)
+				} else {
+					msg = fmt.Sprintf(
+						"must not exceed %s",
+						validationErr.Param(),
+					)
+				}
+
+			case "oneof":
+				msg = fmt.Sprintf("must be one of: %s", validationErr.Param())
+
+			case "email":
+				msg = "must be a valid email address"
+
+			case "e164":
+				msg = "must be a valid phone number with country code"
+
+			case "uuid":
+				msg = "must be a valid UUID"
+
+			case "uuidList":
+				msg = "must be a comma-separated list of valid UUIDs"
+
+			case "dive":
+				msg = "some items are invalid"
+
+			default:
+				if validationErr.Param() != "" {
+					msg = fmt.Sprintf(
+						"%s: %s:%s",
+						field,
+						validationErr.Tag(),
+						validationErr.Param(),
+					)
+				} else {
+					msg = fmt.Sprintf(
+						"%s: %s",
+						field,
+						validationErr.Tag(),
+					)
+				}
+			}
+
+			fieldErrors = append(fieldErrors, errs.FieldError{
+				Field: field,
+				Error: msg,
+			})
+		}
+
+		return "Validation failed", fieldErrors
+	}
+
+	// Check if the type is CustomValidationErrors
+	// loop through all the validation errors and append it into the field error slice
+	customValidationErrors, ok := err.(CustomValidationErrors)
+	if ok {
+		for _, validationErr := range customValidationErrors {
+			fieldErrors = append(fieldErrors, errs.FieldError{
+				Field: validationErr.Field,
+				Error: validationErr.Message,
+			})
+		}
+
+		return "Validation failed", fieldErrors
+	}
+
+	return "Validation failed", []errs.FieldError{
+		{
+			Error: err.Error(),
+		},
+	}
+}
+
+func ValidateName(name string) error {
+	name = strings.TrimSpace(name)
+
+	if len(name) == 0 {
+		return errors.New("name cannot be empty")
+	}
+
+	if len(name) < 2 {
+		return errors.New("name must be at least 2 characters")
+	}
+
+	if len(name) > 100 {
+		return errors.New("name cannot exceed 100 characters")
+	}
+
+	for _, c := range name {
+		if unicode.IsLetter(c) {
+			continue
+		}
+		if c == '\'' {
+			continue
+		}
+		return errors.New("name can only contain letters, hyphens, and apostrophes")
+	}
+	return nil
+}
+
+func ValidatePasswordStrength(password string) error {
+	password = strings.TrimSpace(password)
+
+	if len(password) < 8 {
+		return errors.New("password must be at least 8 characters long")
+	}
+
+	var (
+		hasUpper  bool
+		hasLower  bool
+		hasSymbol bool
+		hasNumber bool
+	)
+
+	for _, c := range password {
+		switch {
+		case unicode.IsDigit(c):
+			hasNumber = true
+		case unicode.IsUpper(c):
+			hasUpper = true
+		case unicode.IsLower(c):
+			hasLower = true
+		case unicode.IsPunct(c) || unicode.IsSymbol(c):
+			hasSymbol = true
+
 		}
 	}
 
-	// Check for validator struct tags errors
-	for _, err := range validationErrors {
-		field := strings.ToLower(err.Field())
-		var msg string
-
-		switch err.Tag() {
-		case "required":
-			msg = "is required"
-		case "min":
-			if err.Type().Kind() == reflect.String {
-				msg = fmt.Sprintf("must be at least %s characters", err.Param())
-			} else {
-				msg = fmt.Sprintf("must be at least %s", err.Param())
-			}
-		case "max":
-			if err.Type().Kind() == reflect.String {
-				msg = fmt.Sprintf("must not exceed %s characters", err.Param())
-			} else {
-				msg = fmt.Sprintf("must not exceed %s", err.Param())
-			}
-		case "oneof":
-			msg = fmt.Sprintf("must be one of: %s", err.Param())
-		case "email":
-			msg = "must be a valid email address"
-		case "e164":
-			msg = "must be a valid phone number with country code"
-		case "uuid":
-			msg = "must be a valid UUID"
-		case "uuidList":
-			msg = "must be a comma-separated list of valid UUIDs"
-		case "dive":
-			msg = "some items are invalid"
-		default:
-			if err.Param() != "" {
-				msg = fmt.Sprintf("%s: %s:%s", field, err.Tag(), err.Param())
-			} else {
-				msg = fmt.Sprintf("%s: %s", field, err.Tag())
-			}
-		}
-
-		fieldErrors = append(fieldErrors, errs.FieldError{
-			Field: strings.ToLower(err.Field()),
-			Error: msg,
-		})
+	if !hasNumber {
+		return errors.New("password must contain at least one number")
 	}
 
-	return "Validation failed", fieldErrors
+	if !hasUpper {
+		return errors.New("password must contain at least one uppercase letter")
+	}
 
+	if !hasSymbol {
+		return errors.New("password must contain at least one symbol")
+	}
+
+	if !hasLower {
+		return errors.New("password must contain at least one lowercase letter")
+	}
+
+	return nil
+}
+
+func HashPassword(password string) (string, error) {
+	passwordBytes := []byte(password)
+
+	hashedBytes, err := bcrypt.GenerateFromPassword(passwordBytes, 12)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hashedBytes), nil
 }
