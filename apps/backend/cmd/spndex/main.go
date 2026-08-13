@@ -10,10 +10,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/xanity-07/spndex/internal/config"
+	"github.com/xanity-07/spndex/internal/database"
 	"github.com/xanity-07/spndex/internal/handlers"
 	"github.com/xanity-07/spndex/internal/loggerpkg"
+	"github.com/xanity-07/spndex/internal/repositories"
 	"github.com/xanity-07/spndex/internal/router"
 	"github.com/xanity-07/spndex/internal/server"
+	"github.com/xanity-07/spndex/internal/service"
 )
 
 const (
@@ -34,12 +37,11 @@ func main() {
 
 	log := loggerpkg.NewLoggerWithService(cfg.Observability, loggerService)
 
-	// Uncomment when we add database schemas
-	// if cfg.Primary.Env == "local" {
-	// 	if err = database.Migrate(context.Background(), cfg, &log); err != nil {
-	// 		log.Fatal().Err(err).Msg("failed to migrate database")
-	// 	}
-	// }
+	if cfg.Primary.Env == "local" {
+		if err = database.Migrate(context.Background(), cfg, &log); err != nil {
+			log.Fatal().Err(err).Msg("failed to migrate database")
+		}
+	}
 
 	// Initialize server
 	srv, err := server.New(cfg, &log, loggerService)
@@ -48,7 +50,9 @@ func main() {
 	}
 
 	// Initialize repositories, services, and handlers
-	handlers := handlers.NewHandlers(srv)
+	repos := repositories.NewRepositories(srv)
+	services := service.NewServices(srv, repos)
+	handlers := handlers.NewHandlers(srv, services)
 
 	// Initialize router
 	r := router.NewRouter(srv, handlers)

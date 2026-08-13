@@ -1,0 +1,23 @@
+package enums
+
+type ExpenseCategory string
+
+const (
+	FOOD          ExpenseCategory = "food"
+	TRANSPORT     ExpenseCategory = "transport"
+	UTILITIES     ExpenseCategory = "utilities"
+	ENTERTAINMENT ExpenseCategory = "entertainment"
+	HEALTHCARE    ExpenseCategory = "healthcare"
+	SHOPPING      ExpenseCategory = "shopping"
+	EDUCATION     ExpenseCategory = "education"
+	OTHER         ExpenseCategory = "other"
+)
+
+// Valid returns true if its a valid ExpenseCategory
+func (e ExpenseCategory) Valid() bool {
+	switch e {
+	case FOOD, TRANSPORT, UTILITIES, ENTERTAINMENT, HEALTHCARE, SHOPPING, EDUCATION, OTHER:
+		return true
+	}
+	return false
+}

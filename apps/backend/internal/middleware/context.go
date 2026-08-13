@@ -37,7 +37,7 @@ func (ce *ContextEnhancer) EnhanceContext() gin.HandlerFunc {
 		contextLogger := ce.server.Logger.With().
 			Str("request_id", requstID).
 			Str("method", c.Request.Method).
-			Str("path", c.FullPath()).
+			Str("path", c.Request.URL.Path).
 			Str("ip", c.ClientIP()).
 			Logger()
 
