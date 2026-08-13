@@ -1,5 +1,7 @@
+import { ZAppError } from '@spndex/zod';
 import { createDocument, type ZodOpenApiObject } from 'zod-openapi';
 import { healthPaths } from './contracts/health.js';
+import { userPaths } from './contracts/users.js';
 
 const openApiConfig: ZodOpenApiObject = {
     openapi: '3.1.0',
@@ -10,14 +12,22 @@ const openApiConfig: ZodOpenApiObject = {
     },
     servers: [
         {
-            url: 'http://localhost:8080',
+            url: 'http://localhost:8080/',
+            description: 'Local Server',
+        },
+        {
+            url: 'http://localhost:8080/api/v1',
             description: 'Local Server',
         },
     ],
     paths: {
         ...healthPaths,
+        ...userPaths,
     },
     components: {
+        schemas: {
+            AppError: ZAppError,
+        },
         securitySchemes: {
             bearerAuth: {
                 type: 'http',

@@ -5,6 +5,7 @@ import { getSecurityMetadata } from '../utils.js';
 export const healthPaths: ZodOpenApiPathsObject = {
     '/status': {
         get: {
+            tags: ['Health'],
             summary: 'Get health',
             description: 'Get health status',
             ...getSecurityMetadata({ security: false }),
