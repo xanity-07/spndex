@@ -58,7 +58,7 @@ func (e *AppError) WithMessage(message string) *AppError {
 
 // MakeUpperCaseWithUnderscores returns a HTTP status with format example: "BAD_REQUEST"
 func MakeUpperCaseWithUnderscores(status string) string {
-	return strings.ToUpper(strings.ReplaceAll(status, "", "_"))
+	return strings.ToUpper(strings.ReplaceAll(status, " ", "_"))
 }
 
 func WriteHTTPError(c *gin.Context, err error) {

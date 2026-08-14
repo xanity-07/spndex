@@ -10,4 +10,7 @@ func registerUserRoutes(r gin.IRouter, h *handlers.UserHandlers) {
 	users := r.Group("/users")
 	users.POST("", h.CreateUser())
 	users.GET("", h.GetUsers())
+	users.GET("/:id", h.GetUserByID())
+	users.PATCH("/:id", h.UpdateUser())
+	users.DELETE("/:id", h.DeleteUser())
 }

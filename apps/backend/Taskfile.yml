@@ -39,6 +39,38 @@ tasks:
     - echo 'Creating migration file for {{.NAME}}...'
     - tern new -m ./internal/database/migrations {{.NAME}}
 
+  migrations:down:
+    desc: rollback all database migrations to zero
+    deps: [ confirm ]
+    dotenv: [".env"]
+    cmds:
+      - echo 'Rolling back all migrations...'
+      - tern migrate -m ./internal/database/migrations --conn-string "$TERN_DSN" --destination 0
+
+  migrations:down:one:
+    desc: rollback the single most recent migration
+    deps: [ confirm ]
+    dotenv: [".env"]
+    cmds:
+      - echo 'Rolling back one migration...'
+      - tern migrate -m ./internal/database/migrations --conn-string "$TERN_DSN" --destination -1
+
+
+  migrations:down:to:
+    desc: rollback database migrations to a specific version (usage - task migrations:down:to version=1)
+    deps: [ confirm ]
+    dotenv: [".env"]
+    vars:
+      VERSION: '{{.version | default ""}}'
+    cmds:
+      - |
+        if [ -z "{{.VERSION}}" ]; then
+          echo "Usage: task migrations:down:to version=<number>"
+          exit 1
+        fi
+      - echo 'Rolling back to version {{.VERSION}}...'
+      - tern migrate -m ./internal/database/migrations --conn-string "$TERN_DSN" --destination {{.VERSION}}
+
   migrations:up:
     desc: apply all up database migrations
     deps: [ confirm ]

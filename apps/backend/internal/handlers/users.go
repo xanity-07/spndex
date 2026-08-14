@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/xanity-07/spndex/internal/enums"
 	"github.com/xanity-07/spndex/internal/model"
 	"github.com/xanity-07/spndex/internal/model/user"
 	"github.com/xanity-07/spndex/internal/server"
@@ -30,6 +32,7 @@ func (h *UserHandlers) CreateUser() gin.HandlerFunc {
 		},
 		http.StatusCreated,
 		&user.CreateUserPayload{},
+		enums.BindingJSON,
 	)
 }
 
@@ -39,5 +42,40 @@ func (h *UserHandlers) GetUsers() gin.HandlerFunc {
 	},
 		http.StatusOK,
 		&user.GetUsersQuery{},
+		enums.BindingQuery,
+	)
+}
+
+func (h *UserHandlers) GetUserByID() gin.HandlerFunc {
+	return Handle(h.Handler,
+		func(c *gin.Context, payload *user.GetUserByIDPayload) (*user.User, error) {
+			return h.userService.GetUserByID(c, payload)
+		}, http.StatusOK,
+		&user.GetUserByIDPayload{},
+		enums.BindingURI,
+	)
+}
+
+func (h *UserHandlers) UpdateUser() gin.HandlerFunc {
+	return Handle(
+		h.Handler,
+		func(c *gin.Context, payload *user.UpdateUserPayload) (*user.User, error) {
+			id := c.Param("id")
+			userID := uuid.MustParse(id)
+			return h.userService.UpdateUser(c, userID, payload)
+		},
+		http.StatusOK,
+		&user.UpdateUserPayload{},
+		enums.BindingJSON,
+	)
+}
+
+func (h *UserHandlers) DeleteUser() gin.HandlerFunc {
+	return HandleNoContent(h.Handler, func(c *gin.Context, payload *user.DeleteUserPayload) error {
+		return h.userService.DeleteUser(c, payload)
+	},
+		http.StatusNoContent,
+		&user.DeleteUserPayload{},
+		enums.BindingURI,
 	)
 }
