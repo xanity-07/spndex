@@ -21,3 +21,18 @@ func (e ExpenseCategory) Valid() bool {
 	}
 	return false
 }
+
+type BindingSource string
+
+const (
+	BindingJSON  BindingSource = "json"
+	BindingQuery BindingSource = "query"
+	BindingURI   BindingSource = "uri"
+)
+
+type UserRoles string
+
+const (
+	UserRoleUser  UserRoles = "user"
+	UserRoleAdmin UserRoles = "admin"
+)

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 	"github.com/xanity-07/spndex/internal/errs"
+
 	"github.com/xanity-07/spndex/internal/server"
 	"github.com/xanity-07/spndex/internal/sqlerr"
 )
@@ -40,30 +42,39 @@ func (global *GlobalMiddlewares) RequestLogger() gin.HandlerFunc {
 		latency := time.Since(start)
 
 		statusCode := c.Writer.Status()
-		err := c.Errors.Last()
+		ginErr := c.Errors.Last()
 
 		// If handlers put an HTTP error into c.Errors,
 		// determine the status from that error.
-		if err != nil {
+		if ginErr != nil {
 			var appErr *errs.AppError
-			if errors.As(err, &appErr) {
+
+			if errors.As(ginErr.Err, &appErr) {
 				statusCode = appErr.Status
 			}
 		}
 
-		// Get logger from context
 		logger := GetLogger(c)
 
 		var event *zerolog.Event
 
 		switch {
 		case statusCode >= 500:
-			event = logger.Error().Err(err.Err)
+			event = logger.Error()
+
+			if ginErr != nil {
+				event = event.Err(ginErr.Err)
+			}
+
 		case statusCode >= 400:
 			event = logger.Warn()
+
+			if ginErr != nil {
+				event = event.Err(ginErr.Err)
+			}
+
 		default:
 			event = logger.Info()
-
 		}
 
 		// Add request ID if available
@@ -91,23 +102,27 @@ func (global *GlobalMiddlewares) RequestLogger() gin.HandlerFunc {
 func (global *GlobalMiddlewares) Recover() gin.HandlerFunc {
 	return gin.CustomRecovery(
 		func(c *gin.Context, recovered any) {
-			if err, ok := recovered.(string); ok {
-				c.JSON(http.StatusInternalServerError, &errs.AppError{
-					Code:     errs.MakeUpperCaseWithUnderscores(http.StatusText(http.StatusInternalServerError)),
-					Message:  http.StatusText(http.StatusInternalServerError),
-					Status:   http.StatusInternalServerError,
-					Override: false,
-					Action:   &errs.Action{},
-					Errors: []errs.FieldError{
-						{
-							Field: "Recover middleware",
-							Error: err,
-						},
+			logger := GetLogger(c)
+
+			logger.Error().
+				Any("panic", recovered).
+				Msg("panic recovered")
+
+			c.AbortWithStatusJSON(http.StatusInternalServerError, &errs.AppError{
+				Code:     "INTERNAL_SERVER_ERROR",
+				Message:  "Internal server error",
+				Status:   http.StatusInternalServerError,
+				Override: false,
+				Action:   &errs.Action{},
+				Errors: []errs.FieldError{
+					{
+						Field: "recovery",
+						Error: fmt.Sprint(recovered),
 					},
-				})
-			}
-			c.AbortWithStatus(http.StatusInternalServerError)
-		})
+				},
+			})
+		},
+	)
 }
 
 func (global *GlobalMiddlewares) Secure() gin.HandlerFunc {

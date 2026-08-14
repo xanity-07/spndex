@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/xanity-07/spndex/internal/enums"
 	"github.com/xanity-07/spndex/internal/errs"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,15 +32,27 @@ func (c CustomValidationErrors) Error() string {
 	return "Validation failed"
 }
 
-func BindAndValidate(c *gin.Context, payload Validatable) error {
-	if err := c.ShouldBind(payload); err != nil {
-		return errs.NewBadRequestError(fmt.Sprintf("binding failed for %T: %v", payload, err), true, nil, nil, nil)
+func BindAndValidate(c *gin.Context, payload Validatable, source enums.BindingSource) error {
+	var err error
+
+	switch source {
+	case enums.BindingJSON:
+		err = c.ShouldBind(payload)
+	case enums.BindingQuery:
+		err = c.ShouldBindQuery(payload)
+	case enums.BindingURI:
+		err = c.ShouldBindUri(payload)
+	default:
+		return errs.NewBadRequestError("invalid binding source", true, nil, nil, nil)
 	}
 
-	// After we have a native data type of Go we take this data type and
-	// validate it against a set of rules
+	if err != nil {
+		return errs.NewBadRequestError(fmt.Sprintf("binding failed for %T: %v", payload, err), false, nil, nil, nil)
+	}
+
 	if msg, fieldErrors := validateStruct(payload); fieldErrors != nil {
-		return errs.NewBadRequestError(fmt.Sprintf("validation failed for %T: %s", payload, msg), true, nil, fieldErrors, nil)
+		code := "VALIDATION_FAILED"
+		return errs.NewBadRequestError(msg, true, &code, fieldErrors, nil)
 	}
 	return nil
 }
@@ -255,4 +268,17 @@ func HashPassword(password string) (string, error) {
 	}
 
 	return string(hashedBytes), nil
+}
+
+func ComparePassword(current string, password string) (bool, error) {
+	err := bcrypt.CompareHashAndPassword([]byte(current), []byte(password))
+	if err == nil {
+		return true, nil
+	}
+
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+		return false, nil
+	}
+
+	return false, nil
 }

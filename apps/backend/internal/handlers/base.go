@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/newrelic/go-agent/v3/integrations/nrpkgerrors"
 	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/xanity-07/spndex/internal/enums"
 	"github.com/xanity-07/spndex/internal/errs"
 	"github.com/xanity-07/spndex/internal/middleware"
 	"github.com/xanity-07/spndex/internal/server"
@@ -75,10 +76,11 @@ func (h NoContentResponseHandler) AddAttribute(txn *newrelic.Transaction, result
 // handleRequest is the unified handler function that eliminates code duplication
 func handleRequest[Req validation.Validatable](
 	c *gin.Context,
-	payload Req,
-	handler func(c *gin.Context, result Req) (any, error),
+	req Req,
+	handler func(ctx *gin.Context, req Req) (interface{}, error),
 	responseHandler ResponseHandler,
-) {
+	source enums.BindingSource,
+) error {
 	start := time.Now()
 	method := c.Request.Method
 	path := c.Request.URL.Path
@@ -88,7 +90,6 @@ func handleRequest[Req validation.Validatable](
 	txn := newrelic.FromContext(c.Request.Context())
 	if txn != nil {
 		txn.AddAttribute("handler.name", route)
-		// http.method and http.route are already set by nrecho middleware
 		responseHandler.AddAttribute(txn, nil)
 	}
 
@@ -100,13 +101,11 @@ func handleRequest[Req validation.Validatable](
 		Str("route", route).
 		Logger()
 
-	// user.id is already set by tracing middleware
-
 	logger.Info().Msg("handling request")
 
 	// Validation with observability
 	validationStart := time.Now()
-	if err := validation.BindAndValidate(c, payload); err != nil {
+	if err := validation.BindAndValidate(c, req, source); err != nil {
 		validationDuration := time.Since(validationStart)
 
 		logger.Error().
@@ -117,27 +116,33 @@ func handleRequest[Req validation.Validatable](
 		if txn != nil {
 			txn.NoticeError(nrpkgerrors.Wrap(err))
 			txn.AddAttribute("validation.status", "failed")
-
-			txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
+			txn.AddAttribute(
+				"validation.duration_ms",
+				validationDuration.Milliseconds(),
+			)
 		}
-		return
+		errs.WriteHTTPError(c, err)
+		return err
 	}
 
 	validationDuration := time.Since(validationStart)
+
 	if txn != nil {
 		txn.AddAttribute("validation.status", "success")
-		txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
+		txn.AddAttribute(
+			"validation.duration_ms",
+			validationDuration.Milliseconds(),
+		)
 	}
 
 	logger.Info().
 		Dur("validation_duration", validationDuration).
 		Msg("request validation success")
 
-	// Execute hancler with observability
+	// Execute handler with observability
 	handlerStart := time.Now()
-	result, err := handler(c, payload)
+	result, err := handler(c, req)
 	handlerDuration := time.Since(handlerStart)
-
 	if err != nil {
 		totalDuration := time.Since(start)
 
@@ -150,11 +155,18 @@ func handleRequest[Req validation.Validatable](
 		if txn != nil {
 			txn.NoticeError(nrpkgerrors.Wrap(err))
 			txn.AddAttribute("handler.status", "error")
-			txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
-			txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
+			txn.AddAttribute(
+				"handler.duration_ms",
+				handlerDuration.Milliseconds(),
+			)
+			txn.AddAttribute(
+				"total.duration_ms",
+				totalDuration.Milliseconds(),
+			)
 		}
+
 		errs.WriteHTTPError(c, err)
-		return
+		return err
 	}
 
 	totalDuration := time.Since(start)
@@ -162,8 +174,15 @@ func handleRequest[Req validation.Validatable](
 	// Record success metrics and tracing
 	if txn != nil {
 		txn.AddAttribute("handler.status", "success")
-		txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
-		txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
+		txn.AddAttribute(
+			"handler.duration_ms",
+			handlerDuration.Milliseconds(),
+		)
+		txn.AddAttribute(
+			"total.duration_ms",
+			totalDuration.Milliseconds(),
+		)
+
 		responseHandler.AddAttribute(txn, result)
 	}
 
@@ -174,6 +193,8 @@ func handleRequest[Req validation.Validatable](
 		Msg("request completed successfully")
 
 	responseHandler.Handle(c, result)
+
+	return nil
 }
 
 // Handle wraps a handler with validation, error handling, logging, metrics, and tracing
@@ -181,25 +202,40 @@ func Handle[Req validation.Validatable, Res any](
 	h Handler,
 	handler HandlerFunc[Req, Res],
 	status int,
-	payload Req,
+	req Req,
+	source enums.BindingSource,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		handleRequest(ctx, payload, func(ctx *gin.Context, req Req) (interface{}, error) {
-			return handler(ctx, req)
-		}, JSONResponseHandler{status: status})
+		_ = handleRequest(
+			ctx,
+			req,
+			func(ctx *gin.Context, req Req) (interface{}, error) {
+				return handler(ctx, req)
+			},
+			JSONResponseHandler{status: status},
+			source,
+		)
 	}
 }
 
 // HandleNoContent wraps a handler with validation, error handling, logging, metrics, and tracing for endpoints that don't return content
-func HandleNoContent[Req validation.Validatable, Res any](
+func HandleNoContent[Req validation.Validatable](
 	h Handler,
 	handler HandlerFuncNoContent[Req],
 	status int,
 	req Req,
+	source enums.BindingSource,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		handleRequest(ctx, req, func(ctx *gin.Context, req Req) (interface{}, error) {
-			return nil, handler(ctx, req)
-		}, NoContentResponseHandler{status: status})
+		_ = handleRequest(
+			ctx,
+			req,
+			func(ctx *gin.Context, req Req) (interface{}, error) {
+				return nil, handler(ctx, req)
+			},
+			NoContentResponseHandler{status: status},
+			source,
+		)
+
 	}
 }

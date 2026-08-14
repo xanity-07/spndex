@@ -15,6 +15,7 @@ func NewRouter(s *server.Server, h *handlers.Handlers) *gin.Engine {
 
 	// Global middleware registration
 	router.Use(
+		mw.Global.Recover(),
 		mw.Global.CORS(),
 		mw.Global.Secure(),
 		middleware.RequestID(),
@@ -22,9 +23,7 @@ func NewRouter(s *server.Server, h *handlers.Handlers) *gin.Engine {
 		mw.Tracing.EnhanceTracing(),
 		mw.ContextEnhancer.EnhanceContext(),
 		mw.Global.RequestLogger(),
-		mw.Global.Recover(),
 	)
-
 	// register system routes
 	registerSystemRoutes(router, h)
 
