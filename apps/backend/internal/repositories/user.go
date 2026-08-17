@@ -161,6 +161,41 @@ func (r *UserRepository) GetUsers(ctx context.Context, query *user.GetUsersQuery
 	}, nil
 }
 
+func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	stmt := `
+		SELECT
+			id,
+			first_name,
+			last_name,
+			email,
+			password_hash,
+			user_role,
+			created_at,
+			updated_at,
+			deleted_at
+		FROM
+			users
+		WHERE
+			email = @email
+	`
+
+	rows, err := r.server.DB.Pool.Query(ctx, stmt, pgx.NamedArgs{
+		"email": email,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("user not found: %w", err)
+		}
+		return nil, fmt.Errorf("failed to collect row from table users: %w", err)
+	}
+	return &user, nil
+}
+
 func (r *UserRepository) GetUserByID(ctx context.Context, payload *user.GetUserByIDPayload) (*user.User, error) {
 	stmt := `
 		SELECT

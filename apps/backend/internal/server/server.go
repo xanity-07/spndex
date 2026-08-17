@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/newrelic/go-agent/v3/integrations/nrredis-v9"
 	"github.com/redis/go-redis/v9"
 	"github.com/rs/zerolog"
 	"github.com/xanity-07/spndex/internal/config"
@@ -24,37 +23,16 @@ type Server struct {
 	httpServer    *http.Server
 }
 
-func New(cfg *config.Config, logger *zerolog.Logger, loggerService *loggerpkg.LoggerService) (*Server, error) {
+func New(cfg *config.Config, logger *zerolog.Logger, loggerService *loggerpkg.LoggerService, redisClient *redis.Client) (*Server, error) {
 	db, err := database.New(cfg, logger, loggerService)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize database: %w", err)
 	}
 
-	// Redis client with New Relic integration
-	opts, err := redis.ParseURL(cfg.Redis.Address)
-	if err != nil {
-		return nil, err
-	}
-	rdb := redis.NewClient(opts)
-	// Add New Relic hook if available
-	if loggerService != nil && loggerService.GetApplication() != nil {
-		rdb.AddHook(nrredis.NewHook(rdb.Options()))
-	}
-
-	// Test Redis connection
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-
-	if err := rdb.Ping(ctx).Err(); err != nil {
-		logger.Error().Err(err).Msg("Failed to connect to redis, continuing without Redis")
-		// Dont fail startup if Redis is unabailable
-	}
-	logger.Info().Str("component", "Redis").Msg("connected to Redis")
-
 	server := &Server{
 		Config:        cfg,
 		DB:            db,
-		Redis:         rdb,
+		Redis:         redisClient,
 		Logger:        logger,
 		LoggerService: loggerService,
 	}
