@@ -236,8 +236,7 @@ func (r *UserRepository) UpdateUser(ctx context.Context, userID uuid.UUID, paylo
 		"id": userID,
 	}
 
-	setClauses := []string{"updated_at = @updated_at"}
-	args["updated_at"] = time.Now().Format("2006-01-02 15:04:05")
+	setClauses := []string{}
 
 	if payload.Email != nil {
 		setClauses = append(setClauses, "email = @email")
@@ -263,6 +262,8 @@ func (r *UserRepository) UpdateUser(ctx context.Context, userID uuid.UUID, paylo
 		return nil, errs.NewBadRequestError("no fields to update", false, nil, nil, nil)
 	}
 
+	setClauses = append(setClauses, "updated_at = @updated_at")
+	args["updated_at"] = time.Now()
 	stmt += strings.Join(setClauses, ", ")
 	stmt += " WHERE id = @id AND deleted_at IS NULL RETURNING *"
 
@@ -287,8 +288,6 @@ func (r *UserRepository) DeleteUser(ctx context.Context, payload *user.DeleteUse
 		WHERE
 			id = @id
 			AND deleted_at IS NULL
-		RETURNING
-		*
 	`
 	result, err := r.server.DB.Pool.Exec(ctx, stmt, pgx.NamedArgs{"id": payload.ID})
 	if err != nil {

@@ -16,6 +16,14 @@ CREATE TYPE user_roles AS ENUM (
     'admin'
 );
 
+CREATE TYPE currency_code AS ENUM (
+    'USD',
+    'EUR',
+    'GBP',
+    'CAD',
+    'AUD'
+);
+
 ---- create above / drop below ----
 
 DROP TYPE IF EXISTS user_roles;

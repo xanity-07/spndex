@@ -35,6 +35,10 @@ func (c CustomValidationErrors) Error() string {
 func BindAndValidate(c *gin.Context, payload Validatable, source enums.BindingSource) error {
 	var err error
 
+	// fmt.Printf("payload type: %T\n", payload)
+	// fmt.Printf("payload before binding: %+v\n", payload)
+	// fmt.Printf("uri id: %q\n", c.Param("id"))
+
 	switch source {
 	case enums.BindingJSON:
 		err = c.ShouldBind(payload)
@@ -47,7 +51,7 @@ func BindAndValidate(c *gin.Context, payload Validatable, source enums.BindingSo
 	}
 
 	if err != nil {
-		return errs.NewBadRequestError(fmt.Sprintf("binding failed for %T: %v", payload, err), false, nil, nil, nil)
+		return errs.NewBadRequestError(fmt.Sprintf("binding failed :%s", err.Error()), false, nil, nil, nil)
 	}
 
 	if msg, fieldErrors := validateStruct(payload); fieldErrors != nil {

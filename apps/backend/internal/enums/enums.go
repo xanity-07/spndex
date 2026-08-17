@@ -46,3 +46,13 @@ const (
 func (p RedisKeyPrefix) Key(id string) string {
 	return string(p) + id
 }
+
+type CurrencyCode string
+
+const (
+	CurrencyCodeUSD CurrencyCode = "USD"
+	CurrencyCodeEUR CurrencyCode = "EUR"
+	CurrencyCodeGBP CurrencyCode = "GBP"
+	CurrencyCodeCAD CurrencyCode = "CAD"
+	CurrencyCodeAUD CurrencyCode = "AUD"
+)

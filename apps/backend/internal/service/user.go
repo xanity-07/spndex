@@ -140,7 +140,7 @@ func (s *UserService) UpdateUser(ctx *gin.Context, userID uuid.UUID, payload *us
 
 	updatedUser, err := s.userRepo.UpdateUser(ctx, userID, payload)
 	if err != nil {
-		logger.Error().Err(err).Msg("failed to create user")
+		logger.Error().Err(err).Msg("failed to update user")
 		return nil, err
 	}
 
