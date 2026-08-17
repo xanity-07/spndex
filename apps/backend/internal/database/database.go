@@ -112,7 +112,7 @@ func New(cfg *config.Config, logger *zerolog.Logger, loggerService *loggerpkg.Lo
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	logger.Info().Msg("connected to the database")
+	logger.Info().Str("component", "PostgreSQL").Msg("connected to database")
 
 	return database, nil
 }

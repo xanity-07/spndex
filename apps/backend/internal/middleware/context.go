@@ -13,9 +13,11 @@ import (
 type Key string
 
 const (
-	UserIDKey   Key = "user_id"
-	UserRoleKey Key = "user_role"
-	LoggerKey   Key = "logger"
+	UserIDKey    Key = "user_id"
+	UserRoleKey  Key = "user_role"
+	LoggerKey    Key = "logger"
+	SessionIDKey Key = "session_id"
+	CTXKeyRole   Key = "role"
 )
 
 type ContextEnhancer struct {
@@ -113,4 +115,13 @@ func GetLogger(c *gin.Context) *zerolog.Logger {
 
 	logger := zerolog.Nop()
 	return &logger
+}
+
+func GetSessionID(c *gin.Context) string {
+	if sessionID, ok := c.Get(SessionIDKey); ok {
+		if sID, ok := sessionID.(string); ok {
+			return sID
+		}
+	}
+	return ""
 }

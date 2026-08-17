@@ -19,6 +19,13 @@ type Handler struct {
 	server *server.Server
 }
 
+// This is for satisfying the compiler when implementing user logout
+type EmptyRequest struct{}
+
+func (EmptyRequest) Validate() error {
+	return nil
+}
+
 // NewHandler creates a new base handler
 func NewHandler(s *server.Server) Handler {
 	return Handler{

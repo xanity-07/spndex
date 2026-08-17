@@ -28,60 +28,6 @@ func NewUserService(s *server.Server, userRepo *repositories.UserRepository) *Us
 	}
 }
 
-func (s *UserService) CreateUser(ctx *gin.Context, payload *user.CreateUserPayload) (*user.User, error) {
-	logger := middleware.GetLogger(ctx)
-
-	exists, err := s.userRepo.CheckUserExists(ctx, payload.Email)
-	if err != nil {
-		logger.Error().Err(err).Msg("failed to check if user exists")
-		return nil, errs.NewBadRequestError("failed to check if user exists", false, nil, nil, nil)
-	}
-
-	if exists {
-		logger.Warn().Msg("user with this email already exists")
-		code := "USER_WITH_EMAIL_EXISTS"
-		return nil, errs.NewBadRequestError("user with this email already exists", false, &code, nil, nil)
-	}
-
-	if err = validation.ValidateName(payload.FirstName); err != nil {
-		logger.Error().Err(err).Msg("first name validation failed")
-		return nil, errs.NewBadRequestError(err.Error(), false, nil, nil, nil)
-	}
-
-	if err = validation.ValidateName(payload.LastName); err != nil {
-		logger.Error().Err(err).Msg("last name validation failed")
-		return nil, errs.NewBadRequestError(err.Error(), false, nil, nil, nil)
-	}
-
-	if err = validation.ValidatePasswordStrength(payload.Password); err != nil {
-		logger.Error().Err(err).Msg("invalid password")
-		return nil, errs.NewBadRequestError(err.Error(), false, nil, nil, nil)
-	}
-
-	passwordHash, err := validation.HashPassword(payload.Password)
-	if err != nil {
-		logger.Error().Err(err).Msg("failed to hash password")
-		return nil, fmt.Errorf("failed to hash password")
-	}
-
-	payload.Password = passwordHash
-
-	user, err := s.userRepo.CreateUser(ctx, payload)
-	if err != nil {
-		logger.Error().Err(err).Msg("failed to create user")
-		return nil, err
-	}
-
-	// Business event logs
-	eventLogger := middleware.GetLogger(ctx)
-	eventLogger.Info().
-		Str("event", "user_created").
-		Str("user_id", user.ID.String()).
-		Msg("user created successfully")
-
-	return user, nil
-}
-
 func (s *UserService) GetUsers(ctx *gin.Context, query *user.GetUsersQuery) (*model.PaginatedResponse[user.User], error) {
 	logger := middleware.GetLogger(ctx)
 	userList, err := s.userRepo.GetUsers(ctx, query)

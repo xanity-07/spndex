@@ -24,22 +24,14 @@ func NewUserHandlers(s *server.Server, userSerivice *service.UserService) *UserH
 	}
 }
 
-func (h *UserHandlers) CreateUser() gin.HandlerFunc {
-	return Handle(
-		h.Handler,
-		func(c *gin.Context, payload *user.CreateUserPayload) (*user.User, error) {
-			return h.userService.CreateUser(c, payload)
-		},
-		http.StatusCreated,
-		&user.CreateUserPayload{},
-		enums.BindingJSON,
-	)
-}
-
 func (h *UserHandlers) GetUsers() gin.HandlerFunc {
-	return Handle(h.Handler, func(c *gin.Context, query *user.GetUsersQuery) (*model.PaginatedResponse[user.User], error) {
-		return h.userService.GetUsers(c, query)
-	},
+	return Handle(h.Handler,
+		func(
+			c *gin.Context,
+			query *user.GetUsersQuery,
+		) (*model.PaginatedResponse[user.User], error) {
+			return h.userService.GetUsers(c, query)
+		},
 		http.StatusOK,
 		&user.GetUsersQuery{},
 		enums.BindingQuery,

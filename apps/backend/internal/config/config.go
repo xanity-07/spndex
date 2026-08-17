@@ -47,6 +47,7 @@ type DatabaseConfig struct {
 
 type AuthConfig struct {
 	SecretKey string `koanf:"secret_key" validate:"required"`
+	TTLHours  int    `koanf:"ttl_hours" validate:"required"`
 }
 
 type RedisConfig struct {

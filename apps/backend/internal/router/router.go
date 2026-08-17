@@ -4,11 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/xanity-07/spndex/internal/handlers"
 	"github.com/xanity-07/spndex/internal/middleware"
+	"github.com/xanity-07/spndex/internal/repositories"
 	v1 "github.com/xanity-07/spndex/internal/router/v1"
 	"github.com/xanity-07/spndex/internal/server"
 )
 
-func NewRouter(s *server.Server, h *handlers.Handlers) *gin.Engine {
+func NewRouter(s *server.Server, h *handlers.Handlers, repos *repositories.Repositories) *gin.Engine {
 	mw := middleware.NewMiddlewares(s)
 
 	router := gin.New()
@@ -29,7 +30,7 @@ func NewRouter(s *server.Server, h *handlers.Handlers) *gin.Engine {
 
 	// register versioned routes
 	v1Router := router.Group("/api/v1")
-	v1.RegisterV1Routes(v1Router, h, mw)
+	v1.RegisterV1Routes(v1Router, h, mw, repos.SessionRepo, []byte(s.Config.Auth.SecretKey))
 
 	return router
 }

@@ -36,3 +36,13 @@ const (
 	UserRoleUser  UserRoles = "user"
 	UserRoleAdmin UserRoles = "admin"
 )
+
+type RedisKeyPrefix string
+
+const (
+	SessionKeyPrefix RedisKeyPrefix = "session:"
+)
+
+func (p RedisKeyPrefix) Key(id string) string {
+	return string(p) + id
+}

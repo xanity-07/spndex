@@ -43,8 +43,14 @@ func main() {
 		}
 	}
 
+	// Initialize redis
+	redisClient, err := database.NewRedis(cfg, &log, loggerService)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize redis")
+	}
+
 	// Initialize server
-	srv, err := server.New(cfg, &log, loggerService)
+	srv, err := server.New(cfg, &log, loggerService, redisClient)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize server")
 	}
@@ -55,7 +61,7 @@ func main() {
 	handlers := handlers.NewHandlers(srv, services)
 
 	// Initialize router
-	r := router.NewRouter(srv, handlers)
+	r := router.NewRouter(srv, handlers, repos)
 
 	// Setup HTTP server
 	srv.SetupHTTPServer(r)
