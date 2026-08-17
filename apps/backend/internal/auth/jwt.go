@@ -11,9 +11,9 @@ import (
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID    uuid.UUID       `json:"user_id"`
 	SessionID string          `json:"session_id"`
 	Role      enums.UserRoles `json:"role"`
+	UserID    uuid.UUID       `json:"user_id"`
 }
 
 func GenerateToken(userID uuid.UUID, sessionID string, role enums.UserRoles, secret []byte, ttl time.Duration) (string, error) {

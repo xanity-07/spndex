@@ -84,18 +84,18 @@ func (auth *AuthService) Register(ctx *gin.Context, payload *user.CreateUserPayl
 	return createdUser, nil
 }
 
-func (a *AuthService) Login(ctx *gin.Context, payload *authmodel.LoginPayload) (string, error) {
+func (a *AuthService) Login(ctx *gin.Context, payload *authmodel.LoginPayload) (*authmodel.LoginResponsePayload, error) {
 	logger := middleware.GetLogger(ctx)
 
 	foundUser, err := a.userRepo.GetUserByEmail(ctx, payload.Email)
 	if err != nil {
 		logger.Warn().Err(err).Msg("login failed: user lookup failed")
-		return "", errs.NewUnauthorizedError("invalid email or password", false)
+		return nil, errs.NewUnauthorizedError("invalid email or password", false)
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(payload.Password)); err != nil {
 		logger.Warn().Err(err).Msg("login failed: password missmatch")
-		return "", errs.NewUnauthorizedError("invalid email or password", false)
+		return nil, errs.NewUnauthorizedError("invalid email or password", false)
 	}
 
 	sessionID := uuid.NewString()
@@ -109,13 +109,13 @@ func (a *AuthService) Login(ctx *gin.Context, payload *authmodel.LoginPayload) (
 
 	if err = a.sessionRepo.Create(ctx, session, ttl); err != nil {
 		logger.Error().Err(err).Msg("failed to create session")
-		return "", fmt.Errorf("failed to create session: %w", err)
+		return nil, fmt.Errorf("failed to create session: %w", err)
 	}
 
 	token, err := auth.GenerateToken(foundUser.ID, sessionID, foundUser.Role, []byte(a.server.Config.Auth.SecretKey), ttl)
 	if err != nil {
 		logger.Error().Err(err).Msg("failed to generate token")
-		return "", fmt.Errorf("failed to generate token: %w", err)
+		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
 	eventLogger := middleware.GetLogger(ctx)
@@ -124,7 +124,12 @@ func (a *AuthService) Login(ctx *gin.Context, payload *authmodel.LoginPayload) (
 		Str("user_id", foundUser.ID.String()).
 		Msg("User logged in successfully")
 
-	return token, nil
+	resp := &authmodel.LoginResponsePayload{
+		User:  foundUser,
+		Token: token,
+	}
+
+	return resp, nil
 }
 
 func (a *AuthService) Logout(ctx *gin.Context) error {

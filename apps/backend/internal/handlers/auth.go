@@ -36,7 +36,7 @@ func (h *AuthHandler) Register() gin.HandlerFunc {
 }
 
 func (h *AuthHandler) Login() gin.HandlerFunc {
-	return Handle(h.Handler, func(c *gin.Context, payload *authmodel.LoginPayload) (string, error) {
+	return Handle(h.Handler, func(c *gin.Context, payload *authmodel.LoginPayload) (*authmodel.LoginResponsePayload, error) {
 		return h.AuthService.Login(c, payload)
 	}, http.StatusOK,
 		&authmodel.LoginPayload{},
