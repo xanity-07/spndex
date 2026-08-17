@@ -14,9 +14,12 @@ func RegisterV1Routes(
 	sessionRepo *repositories.SessionRepository,
 	jwtSecret []byte,
 ) {
-	// Register user routes
-	registerUserRoutes(router, handlers.User)
+	// Register users routes
+	registerUserRoutes(router, handlers.User, sessionRepo, jwtSecret)
 
 	// Register Auth routes
 	registerAuthRoutes(router, handlers.Auth, sessionRepo, jwtSecret)
+
+	// Register Expenses routes
+	registerExpenseRoutes(router, handlers.Expense, sessionRepo, jwtSecret)
 }

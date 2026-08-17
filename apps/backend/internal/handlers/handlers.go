@@ -10,6 +10,7 @@ type Handlers struct {
 	OpenAPI *OpenAPIHandler
 	User    *UserHandlers
 	Auth    *AuthHandler
+	Expense *ExpenseHandler
 }
 
 // pass in service when implemented
@@ -19,5 +20,6 @@ func NewHandlers(s *server.Server, services *service.Services) *Handlers {
 		OpenAPI: NewOpenAPIHandler(s),
 		User:    NewUserHandlers(s, services.User),
 		Auth:    NewAuthHandler(s, services.Auth),
+		Expense: NewExpenseHandler(s, services.Expense),
 	}
 }

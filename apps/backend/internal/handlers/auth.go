@@ -30,7 +30,9 @@ func (h *AuthHandler) Register() gin.HandlerFunc {
 			return h.AuthService.Register(c, payload)
 		},
 		http.StatusCreated,
-		&user.CreateUserPayload{},
+		func() *user.CreateUserPayload {
+			return &user.CreateUserPayload{}
+		},
 		enums.BindingJSON,
 	)
 }
@@ -39,7 +41,9 @@ func (h *AuthHandler) Login() gin.HandlerFunc {
 	return Handle(h.Handler, func(c *gin.Context, payload *authmodel.LoginPayload) (*authmodel.LoginResponsePayload, error) {
 		return h.AuthService.Login(c, payload)
 	}, http.StatusOK,
-		&authmodel.LoginPayload{},
+		func() *authmodel.LoginPayload {
+			return &authmodel.LoginPayload{}
+		},
 		enums.BindingJSON,
 	)
 }

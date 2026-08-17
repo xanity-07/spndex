@@ -209,13 +209,13 @@ func Handle[Req validation.Validatable, Res any](
 	h Handler,
 	handler HandlerFunc[Req, Res],
 	status int,
-	req Req,
+	newReq func() Req,
 	source enums.BindingSource,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		_ = handleRequest(
 			ctx,
-			req,
+			newReq(),
 			func(ctx *gin.Context, req Req) (interface{}, error) {
 				return handler(ctx, req)
 			},
