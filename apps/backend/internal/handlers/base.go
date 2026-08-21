@@ -117,16 +117,13 @@ func handleRequest[Req validation.Validatable](
 
 		logger.Error().
 			Err(err).
-			Dur("validation_duration", validationDuration).
+			Dur("validation_duration", time.Duration(validationDuration.Milliseconds())).
 			Msg("request validation failed")
 
 		if txn != nil {
 			txn.NoticeError(nrpkgerrors.Wrap(err))
 			txn.AddAttribute("validation.status", "failed")
-			txn.AddAttribute(
-				"validation.duration_ms",
-				validationDuration.Milliseconds(),
-			)
+			txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
 		}
 		errs.WriteHTTPError(c, err)
 		return err
@@ -136,10 +133,7 @@ func handleRequest[Req validation.Validatable](
 
 	if txn != nil {
 		txn.AddAttribute("validation.status", "success")
-		txn.AddAttribute(
-			"validation.duration_ms",
-			validationDuration.Milliseconds(),
-		)
+		txn.AddAttribute("validation.duration_ms", validationDuration.Milliseconds())
 	}
 
 	logger.Info().
@@ -155,21 +149,15 @@ func handleRequest[Req validation.Validatable](
 
 		logger.Error().
 			Err(err).
-			Dur("handler_duration", handlerDuration).
-			Dur("total_duration", totalDuration).
+			Dur("handler_duration", time.Duration(handlerDuration.Milliseconds())).
+			Dur("total_duration", time.Duration(totalDuration.Milliseconds())).
 			Msg("handler execution failed")
 
 		if txn != nil {
 			txn.NoticeError(nrpkgerrors.Wrap(err))
 			txn.AddAttribute("handler.status", "error")
-			txn.AddAttribute(
-				"handler.duration_ms",
-				handlerDuration.Milliseconds(),
-			)
-			txn.AddAttribute(
-				"total.duration_ms",
-				totalDuration.Milliseconds(),
-			)
+			txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
+			txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
 		}
 
 		errs.WriteHTTPError(c, err)
@@ -181,15 +169,8 @@ func handleRequest[Req validation.Validatable](
 	// Record success metrics and tracing
 	if txn != nil {
 		txn.AddAttribute("handler.status", "success")
-		txn.AddAttribute(
-			"handler.duration_ms",
-			handlerDuration.Milliseconds(),
-		)
-		txn.AddAttribute(
-			"total.duration_ms",
-			totalDuration.Milliseconds(),
-		)
-
+		txn.AddAttribute("handler.duration_ms", handlerDuration.Milliseconds())
+		txn.AddAttribute("total.duration_ms", totalDuration.Milliseconds())
 		responseHandler.AddAttribute(txn, result)
 	}
 
@@ -209,13 +190,13 @@ func Handle[Req validation.Validatable, Res any](
 	h Handler,
 	handler HandlerFunc[Req, Res],
 	status int,
-	newReq func() Req,
+	ReqPayload func() Req,
 	source enums.BindingSource,
 ) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		_ = handleRequest(
 			ctx,
-			newReq(),
+			ReqPayload(),
 			func(ctx *gin.Context, req Req) (interface{}, error) {
 				return handler(ctx, req)
 			},

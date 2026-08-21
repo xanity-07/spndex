@@ -22,4 +22,7 @@ func RegisterV1Routes(
 
 	// Register Expenses routes
 	registerExpenseRoutes(router, handlers.Expense, sessionRepo, jwtSecret)
+
+	//Register Expense Analytics routes
+	registerExpenseAnalyticsRouted(router, handlers.ExpenseAnalytics, sessionRepo, jwtSecret)
 }
