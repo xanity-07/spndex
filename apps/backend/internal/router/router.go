@@ -6,6 +6,7 @@ import (
 	"github.com/xanity-07/spndex/internal/middleware"
 	"github.com/xanity-07/spndex/internal/repositories"
 	v1 "github.com/xanity-07/spndex/internal/router/v1"
+
 	"github.com/xanity-07/spndex/internal/server"
 )
 

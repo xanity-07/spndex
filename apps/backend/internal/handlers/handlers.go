@@ -6,20 +6,22 @@ import (
 )
 
 type Handlers struct {
-	Health  *HealthHandler
-	OpenAPI *OpenAPIHandler
-	User    *UserHandlers
-	Auth    *AuthHandler
-	Expense *ExpenseHandler
+	Health           *HealthHandler
+	OpenAPI          *OpenAPIHandler
+	User             *UserHandlers
+	Auth             *AuthHandler
+	Expense          *ExpenseHandler
+	ExpenseAnalytics *ExpenseAnalyticsHandler
 }
 
 // pass in service when implemented
 func NewHandlers(s *server.Server, services *service.Services) *Handlers {
 	return &Handlers{
-		Health:  NewHealthHandler(s),
-		OpenAPI: NewOpenAPIHandler(s),
-		User:    NewUserHandlers(s, services.User),
-		Auth:    NewAuthHandler(s, services.Auth),
-		Expense: NewExpenseHandler(s, services.Expense),
+		Health:           NewHealthHandler(s),
+		OpenAPI:          NewOpenAPIHandler(s),
+		User:             NewUserHandlers(s, services.User),
+		Auth:             NewAuthHandler(s, services.Auth),
+		Expense:          NewExpenseHandler(s, services.Expense),
+		ExpenseAnalytics: NewExpenseAnalyticsHandler(s, services.ExpenseAnalytics),
 	}
 }

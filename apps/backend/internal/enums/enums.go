@@ -56,3 +56,14 @@ const (
 	CurrencyCodeCAD CurrencyCode = "CAD"
 	CurrencyCodeAUD CurrencyCode = "AUD"
 )
+
+var AllCategories = []ExpenseCategory{
+	FOOD,
+	UTILITIES,
+	SHOPPING,
+	ENTERTAINMENT,
+	EDUCATION,
+	TRANSPORT,
+	HEALTHCARE,
+	OTHER,
+}

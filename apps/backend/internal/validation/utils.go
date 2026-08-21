@@ -35,7 +35,10 @@ func (c CustomValidationErrors) Error() string {
 func BindAndValidate(c *gin.Context, payload Validatable, source enums.BindingSource) error {
 	var err error
 
+	// // Clasic console.log debugging dont delete LOL
+	// fmt.Printf("binding source: %#v\n", source)
 	// fmt.Printf("payload type: %T\n", payload)
+	// fmt.Printf("query params: %#v\n", c.Request.URL.Query())
 	// fmt.Printf("payload before binding: %+v\n", payload)
 	// fmt.Printf("uri id: %q\n", c.Param("id"))
 
@@ -51,7 +54,7 @@ func BindAndValidate(c *gin.Context, payload Validatable, source enums.BindingSo
 	}
 
 	if err != nil {
-		return errs.NewBadRequestError(fmt.Sprintf("binding failed :%s", err.Error()), false, nil, nil, nil)
+		return errs.NewBadRequestError(fmt.Sprintf("binding failed: %s", err.Error()), false, nil, nil, nil)
 	}
 
 	if msg, fieldErrors := validateStruct(payload); fieldErrors != nil {
@@ -100,28 +103,16 @@ func extractValidationErrors(err error) (string, []errs.FieldError) {
 
 			case "min":
 				if validationErr.Type().Kind() == reflect.String {
-					msg = fmt.Sprintf(
-						"must be at least %s characters",
-						validationErr.Param(),
-					)
+					msg = fmt.Sprintf("must be at least %s characters", validationErr.Param())
 				} else {
-					msg = fmt.Sprintf(
-						"must be at least %s",
-						validationErr.Param(),
-					)
+					msg = fmt.Sprintf("must be at least %s", validationErr.Param())
 				}
 
 			case "max":
 				if validationErr.Type().Kind() == reflect.String {
-					msg = fmt.Sprintf(
-						"must not exceed %s characters",
-						validationErr.Param(),
-					)
+					msg = fmt.Sprintf("must not exceed %s characters", validationErr.Param())
 				} else {
-					msg = fmt.Sprintf(
-						"must not exceed %s",
-						validationErr.Param(),
-					)
+					msg = fmt.Sprintf("must not exceed %s", validationErr.Param())
 				}
 
 			case "oneof":
@@ -144,18 +135,9 @@ func extractValidationErrors(err error) (string, []errs.FieldError) {
 
 			default:
 				if validationErr.Param() != "" {
-					msg = fmt.Sprintf(
-						"%s: %s:%s",
-						field,
-						validationErr.Tag(),
-						validationErr.Param(),
-					)
+					msg = fmt.Sprintf("%s: %s:%s", field, validationErr.Tag(), validationErr.Param())
 				} else {
-					msg = fmt.Sprintf(
-						"%s: %s",
-						field,
-						validationErr.Tag(),
-					)
+					msg = fmt.Sprintf("%s: %s", field, validationErr.Tag())
 				}
 			}
 
