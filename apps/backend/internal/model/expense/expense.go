@@ -11,6 +11,6 @@ type Expense struct {
 	UserID       string                `json:"userId" db:"user_id"`
 	Category     enums.ExpenseCategory `json:"category" db:"category"`
 	CurrencyCode enums.CurrencyCode    `json:"currencyCode" db:"currency"`
-	model.Base   `json:"-"`
-	Amount       int64 `json:"amount" db:"amount"`
+	model.Base
+	AmountCents int64 `json:"amountCents" db:"amount"`
 }

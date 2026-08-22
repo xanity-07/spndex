@@ -16,4 +16,5 @@ func registerExpenseRoutes(r gin.IRouter, h *handlers.ExpenseHandler, sessionRep
 	protected.GET("", h.GetExpenses())
 	protected.GET("/:id", h.GetExpenseByID())
 	protected.PATCH("/:id", h.UpdateExpense())
+	protected.DELETE("/:id", h.DeleteExpense())
 }

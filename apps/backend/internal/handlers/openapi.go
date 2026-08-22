@@ -27,6 +27,6 @@ func (h *OpenAPIHandler) ServeOpenAPIUI(c *gin.Context) {
 	}
 
 	// do not cache the file so we can see new changes with refresh
-	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Cache-Control", "no-store")
 	c.Data(http.StatusOK, "text/html; charset=utf-8", templateBytes)
 }

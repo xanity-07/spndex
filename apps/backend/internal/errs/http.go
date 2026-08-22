@@ -27,12 +27,12 @@ type Action struct {
 }
 
 type AppError struct {
-	Action   *Action      `json:"action"` // action to be taken
+	Action   *Action      `json:"action,omitempty"` // action to be taken
 	Code     string       `json:"code"`
 	Message  string       `json:"message"`
-	Errors   []FieldError `json:"errors"` // field level errors
+	Errors   []FieldError `json:"errors,omitempty"` // field level errors
 	Status   int          `json:"status"`
-	Override bool         `json:"override"`
+	Override bool         `json:"override,omitempty"`
 }
 
 func (e *AppError) Error() string {

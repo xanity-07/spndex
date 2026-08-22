@@ -150,14 +150,14 @@ func (s *ExpenseAnalyticsService) GetDashboardStats(ctx *gin.Context, userID uui
 	}
 
 	dashboardStats := &analytic.DashboardStats{
-		HighestExpense:       *highestExpense,
-		LowestExpense:        *lowestExpense,
-		TotalExpenses:        totalExpenses,
-		ExpenseCount:         expenseCount,
-		AverageExpenseAmount: avgExpenseAmount,
-		CurrentMonthTotal:    currentMonthTotal,
-		LastMonthTotal:       previousMonthTotao,
-		MonthlyNetChange:     currentMonthTotal - previousMonthTotao,
+		HighestExpense:            *highestExpense,
+		LowestExpense:             *lowestExpense,
+		TotalExpensesCents:        totalExpenses,
+		ExpenseCount:              expenseCount,
+		AverageExpenseAmountCents: avgExpenseAmount,
+		CurrentMonthTotalCents:    currentMonthTotal,
+		LastMonthTotalCents:       previousMonthTotao,
+		MonthlyNetChangeCents:     currentMonthTotal - previousMonthTotao,
 	}
 
 	return dashboardStats, nil

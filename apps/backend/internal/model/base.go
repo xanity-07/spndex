@@ -19,7 +19,7 @@ type BaseWithUpdatedAt struct {
 }
 
 type BaseWithDeletedAt struct {
-	DeletedAt *time.Time `json:"deletedAt" db:"deleted_at"`
+	DeletedAt *time.Time `json:"-" db:"deleted_at"`
 }
 
 type Base struct {

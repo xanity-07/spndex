@@ -16,12 +16,12 @@ export const ZFieldError = z.object({
 export const ZHttpStatus = z.number().int().min(100).max(599);
 
 export const ZAppError = z.object({
-    action: ZAction.nullable(),
+    action: ZAction.optional(),
     code: z.string().min(1),
     message: z.string().min(1),
-    errors: z.array(ZFieldError),
+    errors: z.array(ZFieldError).optional(),
     status: ZHttpStatus,
-    override: z.boolean(),
+    override: z.boolean().optional(),
 });
 
 export type ActionType = z.infer<typeof ZActionType>;
