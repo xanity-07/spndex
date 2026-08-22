@@ -1,5 +1,8 @@
 import { ZAppError } from '@spndex/zod';
 import { createDocument, type ZodOpenApiObject } from 'zod-openapi';
+import { authPaths } from './contracts/auth.js';
+import { expenseAnalyticsPaths } from './contracts/expenseAnalytics.js';
+import { expensePaths } from './contracts/expenses.js';
 import { healthPaths } from './contracts/health.js';
 import { userPaths } from './contracts/users.js';
 
@@ -22,7 +25,10 @@ const openApiConfig: ZodOpenApiObject = {
     ],
     paths: {
         ...healthPaths,
+        ...authPaths,
         ...userPaths,
+        ...expensePaths,
+        ...expenseAnalyticsPaths,
     },
     components: {
         schemas: {

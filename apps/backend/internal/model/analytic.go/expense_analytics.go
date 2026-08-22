@@ -12,24 +12,23 @@ type CategoryTotals struct {
 }
 
 type CategoryStats struct {
-	TotalCents int64   `json:"-" db:"total"`
-	Total      float64 `json:"total" db:"-"`
-	Count      int64   `json:"count" db:"count"`
+	TotalCents int64 `json:"-" db:"total"`
+	Count      int64 `json:"count" db:"count"`
 }
 
 type MonthlyTotals struct {
-	Month string  `json:"month" db:"month"`
-	Total float64 `json:"total" db:"total"`
-	Count int64   `json:"count" db:"count"`
+	Month      string  `json:"month" db:"month"`
+	TotalCents float64 `json:"totalCents" db:"total"`
+	Count      int64   `json:"count" db:"count"`
 }
 
 type DashboardStats struct {
-	HighestExpense       expense.Expense `json:"highestExpense"`
-	LowestExpense        expense.Expense `json:"lowestExpense"`
-	TotalExpenses        int64           `json:"totalExpenses"`
-	ExpenseCount         int             `json:"expenseCount"`
-	AverageExpenseAmount int64           `json:"averageExpenseAmount"`
-	CurrentMonthTotal    int64           `json:"currentMonthTotal"`
-	LastMonthTotal       int64           `json:"lastMonthTotal"`
-	MonthlyNetChange     int64           `json:"monthlyNetChange"`
+	HighestExpense            expense.Expense `json:"highestExpense"`
+	LowestExpense             expense.Expense `json:"lowestExpense"`
+	TotalExpensesCents        int64           `json:"totalExpenses"`
+	ExpenseCount              int             `json:"expenseCount"`
+	AverageExpenseAmountCents int64           `json:"averageExpenseAmountCents"`
+	CurrentMonthTotalCents    int64           `json:"currentMonthTotalCents"`
+	LastMonthTotalCents       int64           `json:"lastMonthTotalCents"`
+	MonthlyNetChangeCents     int64           `json:"monthlyNetChangeCents"`
 }

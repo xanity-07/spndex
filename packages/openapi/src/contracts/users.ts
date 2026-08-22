@@ -1,4 +1,4 @@
-import { schemaWithPagination, ZAppError, ZUserResponse } from '@spndex/zod';
+import { schemaWithPagination, ZAppError, ZUpdateUserRequest, ZUserResponse } from '@spndex/zod';
 import type { ZodOpenApiPathsObject } from 'zod-openapi';
 import { getSecurityMetadata } from '../utils.js';
 
@@ -8,7 +8,6 @@ export const userPaths: ZodOpenApiPathsObject = {
             tags: ['Users'],
             summary: 'Get all users',
             description: 'Get a list of all users',
-            ...getSecurityMetadata({ securityType: 'bearer' }),
             responses: {
                 '200': {
                     description: 'List of users',
@@ -36,39 +35,6 @@ export const userPaths: ZodOpenApiPathsObject = {
                 },
             },
         },
-
-        post: {
-            tags: ['Users'],
-            summary: 'Create user',
-            description: 'Create a platform user',
-            ...getSecurityMetadata({ securityType: 'bearer' }),
-            responses: {
-                '201': {
-                    description: 'Create user',
-                    content: {
-                        'application/json': {
-                            schema: ZUserResponse,
-                        },
-                    },
-                },
-                '400': {
-                    description: 'Invalid request',
-                    content: {
-                        'application/json': {
-                            schema: ZAppError,
-                        },
-                    },
-                },
-                '409': {
-                    description: 'User already exists',
-                    content: {
-                        'application/json': {
-                            schema: ZAppError,
-                        },
-                    },
-                },
-            },
-        },
     },
 
     '/users/{id}': {
@@ -76,7 +42,6 @@ export const userPaths: ZodOpenApiPathsObject = {
             tags: ['Users'],
             summary: 'Get user by ID',
             description: "Get a single user's details",
-            ...getSecurityMetadata({ securityType: 'bearer' }),
             responses: {
                 '200': {
                     description: 'User details',
@@ -96,6 +61,78 @@ export const userPaths: ZodOpenApiPathsObject = {
                 },
                 '404': {
                     description: 'User not found',
+                    content: {
+                        'application/json': {
+                            schema: ZAppError,
+                        },
+                    },
+                },
+            },
+        },
+        patch: {
+            tags: ['Users'],
+            summary: 'Update User',
+            description: 'Update User',
+            ...getSecurityMetadata({ securityType: 'bearer' }),
+            responses: {
+                '200': {
+                    description: 'User updated',
+                    content: {
+                        'application/json': {
+                            schema: ZUserResponse,
+                        },
+                    },
+                },
+                '404': {
+                    description: 'User not found',
+                    content: {
+                        'application/json': {
+                            schema: ZAppError,
+                        },
+                    },
+                },
+                '401': {
+                    description: 'Unauthorized',
+                    content: {
+                        'application/json': {
+                            schema: ZAppError,
+                        },
+                    },
+                },
+            },
+            requestBody: {
+                required: true,
+                content: {
+                    'application/json': {
+                        schema: ZUpdateUserRequest,
+                    },
+                },
+            },
+        },
+        delete: {
+            tags: ['Users'],
+            summary: 'Delete User',
+            description: 'Delete User',
+            ...getSecurityMetadata({ securityType: 'bearer' }),
+            responses: {
+                '204': {
+                    description: 'User deleted',
+                    content: {
+                        'application/json': {
+                            schema: ZUserResponse,
+                        },
+                    },
+                },
+                '404': {
+                    description: 'User not found',
+                    content: {
+                        'application/json': {
+                            schema: ZAppError,
+                        },
+                    },
+                },
+                '401': {
+                    description: 'Unauthorized',
                     content: {
                         'application/json': {
                             schema: ZAppError,

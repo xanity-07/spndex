@@ -70,7 +70,7 @@ func (r *ExpenseRepository) CreateExpense(
 		"id":          uuid.New(),
 		"user_id":     userID,
 		"description": payload.Description,
-		"amount":      payload.Amount,
+		"amount":      payload.AmountCents,
 		"category":    payload.Category,
 		"currency":    payload.CurrencyCode,
 		"date":        payload.Date,
@@ -248,9 +248,9 @@ func (r *ExpenseRepository) UpdateExpense(ctx context.Context, userID uuid.UUID,
 
 	setClauses := []string{}
 
-	if payload.Amount != nil {
+	if payload.AmountCents != nil {
 		setClauses = append(setClauses, "amount = @amount")
-		args["amount"] = payload.Amount
+		args["amount"] = payload.AmountCents
 	}
 
 	if payload.Category != nil {

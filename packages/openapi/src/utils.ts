@@ -2,10 +2,10 @@ import type { ZodOpenApiOperationObject } from 'zod-openapi';
 
 type SecurityType = 'bearer' | 'service';
 
-const securitySchemes: Record<SecurityType, Record<string, string[]>[]> = {
+const securitySchemes = {
     bearer: [{ bearerAuth: [] }],
     service: [{ 'x-service-token': [] }],
-};
+} satisfies Record<SecurityType, Record<string, string[]>[]>;
 
 export const getSecurityMetadata = ({
     security = true,
@@ -13,8 +13,8 @@ export const getSecurityMetadata = ({
 }: {
     security?: boolean;
     securityType?: SecurityType;
-} = {}): Partial<ZodOpenApiOperationObject> => {
-    return {
-        ...(security && { security: securitySchemes[securityType] }),
-    };
-};
+} = {}): Partial<ZodOpenApiOperationObject> => ({
+    ...(security && {
+        security: securitySchemes[securityType],
+    }),
+});

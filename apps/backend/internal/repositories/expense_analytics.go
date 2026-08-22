@@ -83,7 +83,6 @@ func (r *ExpenseAnalyticsRepository) GetExpensesByCategory(ctx context.Context, 
 			pct = math.Round(float64(s.TotalCents)/float64(grandTotal)*100*100) / 100
 		}
 
-		s.Total = math.Round(float64(s.TotalCents)/100*100) / 100
 		result = append(result, analytic.CategoryTotals{
 			Category:      c,
 			CategoryStats: s,
@@ -92,16 +91,12 @@ func (r *ExpenseAnalyticsRepository) GetExpensesByCategory(ctx context.Context, 
 
 	}
 	slices.SortFunc(result, func(a, b analytic.CategoryTotals) int {
-		return cmp.Compare(b.Total, a.Total)
+		return cmp.Compare(b.TotalCents, a.TotalCents)
 	})
 	return result, nil
 }
 
-func (r *ExpenseAnalyticsRepository) GetMonthlyExpenses(
-	ctx context.Context,
-	userID uuid.UUID,
-	payload *analytic.GetMonthlyExpensesPayload,
-) ([]analytic.MonthlyTotals, error) {
+func (r *ExpenseAnalyticsRepository) GetMonthlyExpenses(ctx context.Context, userID uuid.UUID, payload *analytic.GetMonthlyExpensesPayload) ([]analytic.MonthlyTotals, error) {
 	stmt := `
 		SELECT
 			TO_CHAR(DATE_TRUNC('month', TO_DATE(e.date, 'YYYY-MM-DD')),	'MM-YYYY') AS month,
@@ -302,7 +297,7 @@ func (r *ExpenseAnalyticsRepository) GetTotalExpenses(ctx context.Context, userI
 func (r *ExpenseAnalyticsRepository) GetAverageExpenseAmount(ctx context.Context, userID uuid.UUID, query *analytic.GetDashboardQuery) (int64, error) {
 	stmt := `
 		SELECT
-			COALESCE(AVG(e.amount), 0) as average
+			COALESCE(AVG(e.amount), 0)::bigint as average
 		FROM
 			expenses e
 		INNER JOIN users u ON u.id = e.user_id
@@ -315,7 +310,7 @@ func (r *ExpenseAnalyticsRepository) GetAverageExpenseAmount(ctx context.Context
 	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
 	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, *query.Range, 0).Format("2006-01-02")
 
-	var average int
+	var average int64
 	err := r.server.DB.Pool.QueryRow(ctx, stmt, pgx.NamedArgs{
 		"user_id":    userID,
 		"start_date": startDate,
@@ -326,7 +321,7 @@ func (r *ExpenseAnalyticsRepository) GetAverageExpenseAmount(ctx context.Context
 		return -1, fmt.Errorf("failed to execute query: %w", err)
 	}
 
-	return int64(average), nil
+	return average, nil
 }
 
 func (r *ExpenseAnalyticsRepository) MonthlyTotals(ctx context.Context, userID uuid.UUID, query *analytic.GetDashboardQuery) (int64, error) {

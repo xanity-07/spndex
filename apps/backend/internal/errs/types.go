@@ -62,5 +62,5 @@ func NewInternalServerError() *AppError {
 }
 
 func ValidateError(err error) *AppError {
-	return NewBadRequestError("Validation failed"+err.Error(), false, nil, nil, nil)
+	return NewBadRequestError("Validation failed "+err.Error(), false, nil, nil, nil)
 }

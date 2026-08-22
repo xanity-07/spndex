@@ -46,7 +46,7 @@ func (s *ExpenseService) CreateExpense(ctx *gin.Context, userID uuid.UUID, paylo
 		Str("id", expense.ID.String()).
 		Str("user_id", expense.UserID).
 		Str("category", string(expense.Category)).
-		Int("amount", int(expense.Amount)).
+		Int("amount", int(expense.AmountCents)).
 		Str("date", expense.Date).
 		Msg("Expense created successfully")
 
@@ -114,7 +114,7 @@ func (s *ExpenseService) UpdateExpense(
 		)
 	}
 
-	if payload.Amount != nil && *payload.Amount < 0 {
+	if payload.AmountCents != nil && *payload.AmountCents < 0 {
 		logger.Error().Err(errors.New("amount")).Msg("invalid amount")
 		return nil, errs.NewBadRequestError(
 			"invalid amount must be greater than 0",
@@ -123,7 +123,7 @@ func (s *ExpenseService) UpdateExpense(
 			[]errs.FieldError{
 				{
 					Field: "amount",
-					Error: fmt.Sprintf("invalid amount %d must be greater than 0", *payload.Amount),
+					Error: fmt.Sprintf("invalid amount %d must be greater than 0", *payload.AmountCents),
 				},
 			},
 			nil,
@@ -141,7 +141,7 @@ func (s *ExpenseService) UpdateExpense(
 		Str("event", "user_updated").
 		Str("id", updatedExpense.ID.String()).
 		Str("user_id", updatedExpense.UserID).
-		Int("amount", int(updatedExpense.Amount)).
+		Int("amount", int(updatedExpense.AmountCents)).
 		Str("category", string(updatedExpense.Category)).
 		Str("description", *updatedExpense.Description).
 		Str("date", updatedExpense.Date).
@@ -151,7 +151,7 @@ func (s *ExpenseService) UpdateExpense(
 }
 
 func (s ExpenseService) DeleteExpense(ctx *gin.Context, userID uuid.UUID, payload *expense.DeleteExpense) error {
-	user, err := s.userRepo.GetUserByID(ctx, &user.GetUserByIDPayload{ID: payload.ID})
+	user, err := s.userRepo.GetUserByID(ctx, &user.GetUserByIDPayload{ID: userID.String()})
 	if err != nil {
 		code := "USER_NOT_FOUND"
 		return errs.NewNotFoundError("user not found", false, &code)
