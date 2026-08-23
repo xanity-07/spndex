@@ -177,6 +177,7 @@ func (r *UserRepository) GetUserByEmail(ctx context.Context, email string) (*use
 			users
 		WHERE
 			email = @email
+			AND deleted_at IS NULL
 	`
 
 	rows, err := r.server.DB.Pool.Query(ctx, stmt, pgx.NamedArgs{
@@ -223,6 +224,11 @@ func (r *UserRepository) GetUserByID(ctx context.Context, payload *user.GetUserB
 
 	user, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			code := "USER_NOT_FOUND"
+			return nil, errs.NewNotFoundError("user not found", false, &code)
+		}
+
 		return nil, fmt.Errorf("failed to collect row from table users %w", err)
 	}
 	return &user, nil
@@ -274,6 +280,11 @@ func (r *UserRepository) UpdateUser(ctx context.Context, userID uuid.UUID, paylo
 
 	updatedTodo, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[user.User])
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			code := "USER_NOT_FOUND"
+			return nil, errs.NewNotFoundError("user not found", false, &code)
+		}
+
 		return nil, fmt.Errorf("failed to collect row from table users: %w", err)
 	}
 
