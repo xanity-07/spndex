@@ -10,7 +10,7 @@ type CreateExpensePayload struct {
 	Description  *string               `json:"description" validate:"omitempty,min=1,max=255"`
 	Category     enums.ExpenseCategory `json:"category" validate:"required,oneof=food transport utilities entertainment healthcare shopping education other"`
 	CurrencyCode enums.CurrencyCode    `json:"currencyCode" validate:"required,len=3,uppercase,oneof=USD EUR GBP CAD AUD"`
-	AmountCents  float64               `json:"amountCents" validate:"required,gt=0"`
+	AmountCents  int64                 `json:"amountCents" validate:"required,gt=0"`
 }
 
 func (p *CreateExpensePayload) Validate() error {

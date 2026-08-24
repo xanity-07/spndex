@@ -28,3 +28,4 @@ CREATE TYPE currency_code AS ENUM (
 
 DROP TYPE IF EXISTS user_roles;
 DROP TYPE IF EXISTS expense_category;
+DROP TYPE IF EXISTS currency_code;

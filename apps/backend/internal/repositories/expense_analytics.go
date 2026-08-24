@@ -131,10 +131,6 @@ func (r *ExpenseAnalyticsRepository) GetMonthlyExpenses(ctx context.Context, use
 		return nil, fmt.Errorf("failed to collect row from table expenses: %w", err)
 	}
 
-	// for i := range results {
-	// 	results[i].TotalCents /= 100
-	// }
-
 	return results, nil
 }
 
@@ -156,18 +152,16 @@ func (r *ExpenseAnalyticsRepository) GetHighestExpense(ctx context.Context, user
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 		ORDER BY
 			e.amount DESC
 		LIMIT 1
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
 	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
-
-	fmt.Println(startDate)
-	fmt.Println(endDate)
 
 	rows, err := r.server.DB.Pool.Query(ctx, stmt, pgx.NamedArgs{
 		"user_id":    userID,
@@ -206,14 +200,15 @@ func (r *ExpenseAnalyticsRepository) GetLowestExpense(ctx context.Context, userI
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 		ORDER BY
 			e.amount ASC
 		LIMIT 1
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
 	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
 
 	rows, err := r.server.DB.Pool.Query(ctx, stmt, pgx.NamedArgs{
@@ -244,11 +239,12 @@ func (r *ExpenseAnalyticsRepository) GetExpenseCount(ctx context.Context, userID
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
 	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
 
 	var count int
@@ -273,12 +269,13 @@ func (r *ExpenseAnalyticsRepository) GetTotalExpenses(ctx context.Context, userI
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
-	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, *query.Range, 0).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
+	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
 
 	var total int
 	err := r.server.DB.Pool.QueryRow(ctx, stmt, pgx.NamedArgs{
@@ -303,12 +300,13 @@ func (r *ExpenseAnalyticsRepository) GetAverageExpenseAmount(ctx context.Context
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
-	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, *query.Range, 0).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
+	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
 
 	var average int64
 	err := r.server.DB.Pool.QueryRow(ctx, stmt, pgx.NamedArgs{
@@ -333,12 +331,13 @@ func (r *ExpenseAnalyticsRepository) MonthlyTotals(ctx context.Context, userID u
 		JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @start_date AND @end_date
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
 			AND u.deleted_at IS NULL
 	`
-	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
-	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, *query.Range, 0).Format("2006-01-02")
+	startDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, -(*query.Range - 1), 0).Format("2006-01-02")
+	endDate := time.Date(*query.Year, time.Month(*query.Month), 1, 0, 0, 0, 0, time.Now().Location()).AddDate(0, 1, 0).Format("2006-01-02")
 
 	var monthlyTotal int64
 	err := r.server.DB.Pool.QueryRow(ctx, stmt, pgx.NamedArgs{
@@ -357,7 +356,7 @@ func (r *ExpenseAnalyticsRepository) MonthlyTotals(ctx context.Context, userID u
 func (r *ExpenseAnalyticsRepository) GetSpendingTrends(ctx context.Context, userID uuid.UUID) ([]analytic.MonthlyTotals, error) {
 	stmt := `
 		SELECT
-			TO_CHAR(DATE_TRUNC('month', TO_DATE(e.date, 'YYYY-MM-DD')),	'MM-YYYY') AS month,
+			TO_CHAR(DATE_TRUNC('month', TO_DATE(e.date, 'YYYY-MM-DD')),'MM-YYYY') AS month,
 			SUM(e.amount) AS total,
 			COUNT(*) AS count
 		FROM
@@ -365,21 +364,25 @@ func (r *ExpenseAnalyticsRepository) GetSpendingTrends(ctx context.Context, user
 		INNER JOIN users u ON u.id = e.user_id
 		WHERE
 			e.user_id = @user_id
-			AND e.date BETWEEN @trend_date AND @today
-			AND u.deleted_at IS NULL
+			AND e.date >= @start_date
+			AND e.date < @end_date
 			AND e.deleted_at IS NULL
+			AND u.deleted_at IS NULL
 		GROUP BY
 			DATE_TRUNC('month', TO_DATE(e.date, 'YYYY-MM-DD'))
 		ORDER BY
 			DATE_TRUNC('month', TO_DATE(e.date, 'YYYY-MM-DD'))
 	`
-	today := time.Date(time.Now().Year(), time.Now().Month()+1, 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
-	trendDate := time.Date(time.Now().Year(), time.Now().Month()-6, 1, 0, 0, 0, 0, time.Now().Location()).Format("2006-01-02")
+
+	now := time.Now()
+
+	startDate := time.Date(now.Year(), now.Month()-5, 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
+	endDate := time.Date(now.Year(), now.Month()+1, 1, 0, 0, 0, 0, now.Location()).Format("2006-01-02")
 
 	args := pgx.NamedArgs{
 		"user_id":    userID,
-		"today":      today,
-		"trend_date": trendDate,
+		"start_date": startDate,
+		"end_date":   endDate,
 	}
 
 	rows, err := r.server.DB.Pool.Query(ctx, stmt, args)
@@ -389,12 +392,8 @@ func (r *ExpenseAnalyticsRepository) GetSpendingTrends(ctx context.Context, user
 
 	results, err := pgx.CollectRows(rows, pgx.RowToStructByName[analytic.MonthlyTotals])
 	if err != nil {
-		return nil, fmt.Errorf("failed to collect row from table expenses: %w", err)
+		return nil, fmt.Errorf("failed to collect rows from table expenses: %w", err)
 	}
-
-	// for i := range results {
-	// 	results[i].Total /= 100
-	// }
 
 	return results, nil
 }

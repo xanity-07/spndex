@@ -11,21 +11,16 @@ import (
 	"github.com/xanity-07/spndex/internal/middleware"
 	"github.com/xanity-07/spndex/internal/model/analytic.go"
 	"github.com/xanity-07/spndex/internal/model/user"
-	"github.com/xanity-07/spndex/internal/repositories"
 	"github.com/xanity-07/spndex/internal/server"
 )
 
 type ExpenseAnalyticsService struct {
 	server               *server.Server
-	userRepo             *repositories.UserRepository
-	expenseAnalyticsRepo *repositories.ExpenseAnalyticsRepository
+	userRepo             UserRepository
+	expenseAnalyticsRepo ExpenseAnalyticsRepository
 }
 
-func NewExpenseAnalyticsService(
-	s *server.Server,
-	expenseAnalyticsRepo *repositories.ExpenseAnalyticsRepository,
-	userRepo *repositories.UserRepository,
-) *ExpenseAnalyticsService {
+func NewExpenseAnalyticsService(s *server.Server, expenseAnalyticsRepo ExpenseAnalyticsRepository, userRepo UserRepository) *ExpenseAnalyticsService {
 	return &ExpenseAnalyticsService{
 		server:               s,
 		expenseAnalyticsRepo: expenseAnalyticsRepo,
@@ -52,11 +47,7 @@ func (s *ExpenseAnalyticsService) GetExpensesByCategory(ctx *gin.Context, userID
 	return categoryTotal, nil
 }
 
-func (s *ExpenseAnalyticsService) GetMonthlyExpenses(
-	ctx *gin.Context,
-	userID uuid.UUID,
-	payload *analytic.GetMonthlyExpensesPayload,
-) ([]analytic.MonthlyTotals, error) {
+func (s *ExpenseAnalyticsService) GetMonthlyExpenses(ctx *gin.Context, userID uuid.UUID, payload *analytic.GetMonthlyExpensesPayload) ([]analytic.MonthlyTotals, error) {
 	logger := middleware.GetLogger(ctx)
 
 	if payload.Year == nil {
@@ -138,7 +129,6 @@ func (s *ExpenseAnalyticsService) GetDashboardStats(ctx *gin.Context, userID uui
 		return nil, fmt.Errorf("failed to get current monthly expenses: %w", err)
 	}
 
-	*query.Month = *query.Month - 1
 	previousMonthTotao, err := s.expenseAnalyticsRepo.MonthlyTotals(ctx, foundUser.ID, &analytic.GetDashboardQuery{
 		Year:  query.Year,
 		Month: query.Month,

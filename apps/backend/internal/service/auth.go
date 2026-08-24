@@ -12,7 +12,6 @@ import (
 	"github.com/xanity-07/spndex/internal/model/authmodel"
 	"github.com/xanity-07/spndex/internal/model/session"
 	"github.com/xanity-07/spndex/internal/model/user"
-	"github.com/xanity-07/spndex/internal/repositories"
 	"github.com/xanity-07/spndex/internal/server"
 	"github.com/xanity-07/spndex/internal/validation"
 	"golang.org/x/crypto/bcrypt"
@@ -20,11 +19,11 @@ import (
 
 type AuthService struct {
 	server      *server.Server
-	userRepo    *repositories.UserRepository
-	sessionRepo *repositories.SessionRepository
+	userRepo    UserRepository
+	sessionRepo SessionRepository
 }
 
-func NewAuthService(s *server.Server, userRepo *repositories.UserRepository, sessionRepo *repositories.SessionRepository) *AuthService {
+func NewAuthService(s *server.Server, userRepo UserRepository, sessionRepo SessionRepository) *AuthService {
 	return &AuthService{
 		server:      s,
 		userRepo:    userRepo,

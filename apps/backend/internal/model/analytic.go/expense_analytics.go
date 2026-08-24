@@ -17,9 +17,9 @@ type CategoryStats struct {
 }
 
 type MonthlyTotals struct {
-	Month      string  `json:"month" db:"month"`
-	TotalCents float64 `json:"totalCents" db:"total"`
-	Count      int64   `json:"count" db:"count"`
+	Month      string `json:"month" db:"month"`
+	TotalCents int64  `json:"totalCents" db:"total"`
+	Count      int64  `json:"count" db:"count"`
 }
 
 type DashboardStats struct {

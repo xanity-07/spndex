@@ -25,45 +25,41 @@ func NewExpenseRepository(s *server.Server) *ExpenseRepository {
 	}
 }
 
-func (r *ExpenseRepository) CreateExpense(
-	ctx context.Context,
-	userID uuid.UUID,
-	payload *expense.CreateExpensePayload,
-) (*expense.Expense, error) {
+func (r *ExpenseRepository) CreateExpense(ctx context.Context, userID uuid.UUID, payload *expense.CreateExpensePayload) (*expense.Expense, error) {
 	stmt := `
-	INSERT INTO expenses (
-		id,
-		user_id,
-		amount,
-		description,
-		category,
-		currency,
-		date
-	)
-	SELECT
-		@id,
-		u.id,
-		@amount,
-		@description,
-		@category,
-		@currency,
-		@date
-	FROM
-		users u
-	WHERE
-		u.id = @user_id
-	    AND u.deleted_at IS NULL
-	RETURNING
-		id,
-		user_id,
-		amount,
-		description,
-		category,
-		currency,
-		date,
-		created_at,
-		updated_at,
-		deleted_at
+		INSERT INTO expenses (
+			id,
+			user_id,
+			amount,
+			description,
+			category,
+			currency,
+			date
+		)
+		SELECT
+			@id,
+			u.id,
+			@amount,
+			@description,
+			@category,
+			@currency,
+			@date
+		FROM
+			users u
+		WHERE
+			u.id = @user_id
+		    AND u.deleted_at IS NULL
+		RETURNING
+			id,
+			user_id,
+			amount,
+			description,
+			category,
+			currency,
+			date,
+			created_at,
+			updated_at,
+			deleted_at
 `
 
 	rows, err := r.server.DB.Pool.Query(ctx, stmt, pgx.NamedArgs{
@@ -119,8 +115,13 @@ func (r *ExpenseRepository) GetExpenses(
 	}
 
 	if query.Search != nil {
-		conditions = append(conditions, "(e.description ILIKE @search OR e.category ILIKE @search)")
+		conditions = append(conditions, "(e.description ILIKE @search OR e.category::text ILIKE @search)")
 		args["search"] = "%" + *query.Search + "%"
+	}
+
+	if query.CurrencyCode != nil {
+		conditions = append(conditions, "e.currency = @currency")
+		args["currency"] = *query.CurrencyCode
 	}
 
 	if query.Category != nil {
@@ -159,7 +160,7 @@ func (r *ExpenseRepository) GetExpenses(
 			stmt += " ASC"
 		}
 	} else {
-		stmt += " ORDER BY created_at DESC"
+		stmt += " ORDER BY e.created_at DESC"
 	}
 
 	stmt += " OFFSET @offset LIMIT @limit"
@@ -174,15 +175,6 @@ func (r *ExpenseRepository) GetExpenses(
 	expenseList, err := pgx.CollectRows(rows, pgx.RowToStructByName[expense.Expense])
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return &model.PaginatedResponse[expense.Expense]{
-				Data:       []expense.Expense{},
-				Page:       1,
-				Limit:      0,
-				Total:      0,
-				TotalPages: 0,
-			}, nil
-		}
 		return nil, fmt.Errorf("failed to collect rows from table expenses: %w", err)
 	}
 
