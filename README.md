@@ -1,87 +1,114 @@
 # Spndex
 
-**Spndex is a work-in-progress expense tracking and analytics application built with Go.**
+**Spndex is a budget management full-stack application currently under development.**
 
-The backend provides a versioned REST API for authentication, users, expenses, and analytics. A frontend application is currently in development.
+The project is built around a Go REST API with PostgreSQL, Redis, OpenAPI, and a TypeScript frontend.
 
-The project focuses on building a maintainable backend with clear separation of concerns, authentication, testing against real infrastructure, and observability.
-
-> **🚧 Work in progress — the application is not yet complete still learning.**
-
----
+> **Status:** Work in progress. The backend is currently the primary focus, while the frontend is being developed alongside it.
 
 ![alt text](login.png)
 
+<!-- OPENAPI SCREENSHOT: GET /api/v1/expenses -->
+
+<!-- OPENAPI SCREENSHOT: POST /api/v1/auth/login -->
+
+<!-- OPENAPI SCREENSHOT: GET /api/v1/expenses/dashboard -->
+
+## Tech Stack
+
+* **Backend:** Go, Gin
+* **Database:** PostgreSQL
+* **Sessions:** Redis
+* **Authentication:** JWT + Redis-backed sessions
+* **API Contracts:** TypeScript, Zod, OpenAPI
+* **Frontend:** TypeScript, React
+* **Testing:** Go testing, Testcontainers
+* **Observability:** New Relic, structured logging, distributed tracing
+* **Infrastructure:** Docker
+
+---
+
 ## Architecture
 
-Spndex uses a layered architecture designed to keep HTTP handling, business logic, and infrastructure concerns separate.
+The backend follows a layered architecture designed to keep HTTP handling, business logic, and data access separate.
 
 ```text
-                         HTTP Request
-                              │
-                              ▼
-                         ┌────────┐
-                         │ Router │
-                         └────┬───┘
-                              │
-                              ▼
-                        ┌───────────┐
-                        │Middleware │
-                        └─────┬─────┘
-                              │
-                              ▼
-                         ┌─────────┐
-                         │Handler  │
-                         └────┬────┘
-                              │
-                              ▼
-                         ┌─────────┐
-                         │ Service │
-                         └────┬────┘
-                              │
-                              ▼
-                      ┌──────────────┐
-                      │  Repository  │
-                      └──────┬───────┘
-                             │
-                    ┌────────┴────────┐
-                    ▼                 ▼
-               PostgreSQL           Redis
+HTTP Request
+     │
+     ▼
+   Router
+     │
+     ▼
+ Middleware
+     │
+     ▼
+  Handler
+     │
+     ▼
+  Service
+     │
+     ▼
+ Repository
+     │
+     ├───────────────┐
+     ▼               ▼
+PostgreSQL         Redis
 ```
+
+### Router
+
+Responsible for registering versioned API routes and connecting routes to middleware and handlers.
+
+Example:
+
+```text
+/api/v1/auth
+/api/v1/users
+/api/v1/expenses
+/api/v1/expenses/dashboard
+```
+
+### Middleware
+
+Handles cross-cutting concerns such as:
+
+* Authentication
+* Request IDs
+* Request context
+* Distributed tracing
+* Request logging
 
 ### Handlers
 
-Handlers are responsible for HTTP concerns such as:
+The HTTP layer is responsible for:
 
-* Request binding
-* Validation
-* Extracting request context
+* Binding requests
+* Request validation
 * Calling services
-* Building HTTP responses
+* Returning HTTP responses
+* Translating application errors into API responses
 
-Business logic is kept out of the handler layer.
+Business logic is kept out of the handlers.
 
 ### Services
 
-Services contain application and business logic.
+Services contain the application's business rules.
 
-They depend on repository interfaces rather than concrete database implementations.
+They operate through repository interfaces rather than directly accessing PostgreSQL or Redis.
 
-This allows the same business logic to be tested using fake repositories without requiring a database.
+This makes the business logic independently testable without requiring external infrastructure.
 
 ### Repositories
 
-Repositories handle infrastructure-specific operations.
+Repositories handle data access and infrastructure operations.
 
-PostgreSQL is used for persistent application data and Redis is used for authentication sessions.
-
-This keeps infrastructure concerns isolated from the service layer.
+PostgreSQL is used for persistent application data while Redis is used for session storage.
 
 ---
 
 ## Authentication
 
-Authentication uses JWTs with Redis-backed sessions.
+Authentication uses JWT access tokens combined with Redis-backed sessions.
 
 ```text
 Login
@@ -90,298 +117,177 @@ Login
   │
   ├── Create Redis session
   │
-  └── Generate JWT containing session ID
+  └── Generate JWT
+          │
+          ▼
+      API Request
+          │
+          ▼
+    Authentication
+      Middleware
+          │
+          ├── Validate JWT
+          └── Validate session
 ```
 
-Authenticated requests use the JWT to identify the session.
+Logging out deletes the Redis session, allowing an otherwise valid JWT to be invalidated before its expiration.
 
-Logging out removes the corresponding Redis session:
+---
+
+## API Contracts
+
+API schemas are maintained in shared TypeScript packages within the monorepo.
 
 ```text
-Logout
-   │
-   ▼
-Delete Redis Session
-   │
-   ▼
-Session Invalidated
+packages/
+├── zod/
+│   ├── auth.ts
+│   ├── users.ts
+│   ├── expense.ts
+│   ├── expenseAnalytics.ts
+│   ├── errors.ts
+│   └── health.ts
+│
+└── openapi/
+    ├── gen.ts
+    ├── index.ts
+    └── utils.ts
 ```
 
-This provides server-side session invalidation instead of relying exclusively on JWT expiration.
+The Zod package contains shared schemas for API requests and responses.
+
+The OpenAPI package uses these contracts to generate the API specification used for documentation.
+
+This keeps API contracts centralized rather than defining them independently in different parts of the project.
 
 ---
 
 ## Testing
 
-Testing is split between unit tests and integration tests.
+The project uses different testing strategies depending on the layer.
 
 ### Service Tests
 
-Service tests use fake repository implementations.
+Service tests use fake repositories to isolate business logic from infrastructure.
 
 ```text
 Service
    │
    ▼
 Fake Repository
-   │
-   ▼
-Unit Test
 ```
 
-This allows business logic to be tested without PostgreSQL or Redis.
-
-Tests cover areas such as:
-
-* Business rules
-* Validation
-* Error handling
-* Authentication
-* Session behavior
-* Partial updates
+This makes it possible to test validation, business rules, and error handling without requiring a database or Redis instance.
 
 ### Repository Tests
 
 Repository tests use real PostgreSQL and Redis instances through Testcontainers.
 
 ```text
-Repository Test
-      │
-      ▼
- Testcontainers
-    ┌─┴─┐
-    ▼   ▼
-Postgres Redis
+Repository
+    │
+    ├── PostgreSQL Container
+    │
+    └── Redis Container
 ```
 
-This allows SQL and Redis behavior to be tested against the actual infrastructure rather than mocked implementations.
+This allows the tests to verify actual SQL queries, database constraints, Redis operations, serialization, filtering, soft deletion, and analytics queries.
 
-Repository tests cover:
+The test infrastructure is shared under:
 
-* CRUD operations
-* Filtering
-* Pagination
-* Ownership checks
-* Soft deletion
-* Analytics queries
-* Redis session operations
-* Serialization
-* Session expiration
+```text
+apps/backend/internal/tests/
+├── postgres.go
+├── redis.go
+├── schema.go
+└── test_helpers.go
+```
 
 ---
 
 ## Observability
 
-Observability is built into the backend rather than added as an afterthought.
+New Relic is integrated into the backend for application observability.
 
-The application uses:
+The backend also uses structured logging and request IDs to make requests easier to trace across application layers.
 
-* **Structured logging** with Zerolog
-* **Request IDs**
-* **Distributed tracing**
-* **OpenTelemetry**
-* **New Relic**
-
-A request can be followed through the application:
-
-```text
-HTTP Request
-     ↓
-Middleware
-     ↓
-Handler
-     ↓
-Service
-     ↓
-Repository
-     ↓
-PostgreSQL / Redis
-```
-
-This makes it easier to trace requests and diagnose failures across application layers.
-
----
-
-## Database Design
-
-PostgreSQL is the primary application database.
-
-The application uses:
-
-* UUID identifiers
-* Foreign keys
-* Database constraints
-* Soft deletion
-* Created/updated timestamps
-* Parameterized queries
-* Database migrations
-
-Expense amounts are stored as integers representing the smallest unit.
-
-For example:
-
-```text
-34.99 → 3499
-```
-
-This avoids floating-point precision issues when calculating expense totals and averages.
-
----
-
-## API
-
-The API is versioned under:
-
-```text
-/api/v1
-```
-
-### Authentication
-
-```text
-POST /auth/register
-POST /auth/login
-POST /auth/logout
-```
-
-### Users
-
-```text
-GET    /users
-GET    /users/:id
-PATCH  /users/:id
-DELETE /users/:id
-```
-
-### Expenses
-
-```text
-POST   /expenses
-GET    /expenses
-GET    /expenses/:id
-PATCH  /expenses/:id
-DELETE /expenses/:id
-```
-
-### Analytics
-
-```text
-GET /expenses/category-totals
-GET /expenses/monthly-expenses
-GET /expenses/dashboard
-GET /expenses/spending-trends
-```
-
-The API is documented with OpenAPI and includes interactive documentation for exploring endpoints and request/response schemas.
+Tracing and logging are implemented through middleware rather than individual handlers.
 
 ---
 
 ## Project Structure
 
 ```text
-apps/backend/
-├── internal/
-│   ├── auth/
-│   ├── database/
-│   ├── handlers/
-│   ├── middleware/
-│   ├── model/
-│   ├── repositories/
-│   ├── router/
-│   ├── service/
-│   ├── tests/
-│   └── validation/
+spndex/
 │
-├── static/
-│   └── openapi.json
+├── apps/
+│   ├── backend/
+│   │   └── internal/
+│   │       ├── auth/            # JWT authentication
+│   │       ├── config/          # Application configuration
+│   │       ├── database/        # PostgreSQL, Redis, migrations
+│   │       ├── enums/           # Application enums
+│   │       ├── errs/            # Application/HTTP errors
+│   │       ├── handlers/        # HTTP layer
+│   │       ├── loggerpkg/       # Logging
+│   │       ├── middleware/      # Auth, tracing, context, request IDs
+│   │       ├── model/           # Application models
+│   │       ├── repositories/    # Data access
+│   │       ├── router/          # Route registration
+│   │       ├── server/          # Server lifecycle
+│   │       ├── service/         # Business logic
+│   │       ├── sqlerr/          # SQL error handling
+│   │       ├── tests/           # Integration test infrastructure
+│   │       └── validation/      # Validation
+│   │
+│   └── web/                     # React frontend (work in progress)
 │
-└── main.go
+├── packages/
+│   ├── zod/                     # Shared API schemas
+│   └── openapi/                 # OpenAPI generation
+│
+├── package.json
+├── pnpm-workspace.yaml
+└── README.md
 ```
 
-The structure separates application responsibilities instead of combining routing, business logic, and infrastructure code.
-
 ---
 
-## Engineering Decisions
+## Current Features
 
-Some of the main design decisions in the project are:
+* User registration and authentication
+* JWT authentication
+* Redis-backed sessions
+* User management
+* Expense creation and management
+* Soft deletion
+* Expense filtering and pagination
+* Expense analytics
+* Category spending totals
+* Monthly spending
+* Spending trends
+* Dashboard statistics
+* OpenAPI documentation
+* Structured application errors
+* Request tracing and logging
+* PostgreSQL integration tests
+* Redis integration tests
+* Service unit tests with repository fakes
 
-**Interface-driven services**
+## In Progress
 
-Services depend on repository interfaces, making business logic easier to test and keeping infrastructure details isolated.
+Spndex is still under active development.
 
-**Redis-backed sessions**
+Current work includes:
 
-JWT authentication is combined with server-side sessions so sessions can be invalidated before token expiration.
+* Frontend application
+* Additional API functionality
+* Rate limiting
+* Additional test coverage
+* Continued API and architecture improvements
 
-**Integration testing**
+## Why I Built This
 
-Repository tests use real PostgreSQL and Redis containers instead of mocking the underlying infrastructure.
+Spndex started as a budget management application but has evolved into a project for exploring production-oriented backend architecture.
 
-**Layered architecture**
-
-Handlers, services, and repositories have distinct responsibilities, making the application easier to reason about and change.
-
-**Observability**
-
-Logging, request IDs, tracing, and monitoring are integrated into the application architecture.
-
-**Integer expense amounts**
-
-Expenses are represented using integer amounts rather than floating-point values to avoid precision issues during calculations.
-
----
-
-## Current Status
-
-Spndex is actively being developed.
-
-### Implemented
-
-* [x] Versioned REST API
-* [x] User management
-* [x] Expense management
-* [x] Expense analytics
-* [x] JWT authentication
-* [x] Redis-backed sessions
-* [x] Session invalidation on logout
-* [x] Request validation
-* [x] Soft deletion
-* [x] OpenAPI documentation
-* [x] Service unit tests
-* [x] PostgreSQL integration tests
-* [x] Redis integration tests
-* [x] Structured logging
-* [x] Request IDs
-* [x] Distributed tracing
-* [x] New Relic monitoring
-
-### In Progress
-
-* [ ] Frontend application
-* [ ] Additional backend features
-* [ ] Additional test coverage
-* [ ] Rate limiting
-* [ ] Production deployment
-
----
-
-## Why I Built It
-
-Spndex started as an expense tracking application but has evolved into a project focused on backend engineering and system design.
-
-The project is being used to explore and apply concepts including:
-
-* REST API design
-* Layered architecture
-* Dependency inversion
-* Interface-driven design
-* Authentication and session management
-* PostgreSQL
-* Redis
-* Integration testing
-* Testcontainers
-* Observability
-* Distributed tracing
-
-The system is still evolving as new features and architectural requirements are introduced.
+The main focus has been designing clear boundaries between HTTP handling, business logic, data access, authentication, infrastructure, testing, and observability while keeping the system maintainable as it grows.
