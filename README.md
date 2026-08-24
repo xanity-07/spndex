@@ -221,6 +221,9 @@ spndex/
 │
 ├── apps/
 │   ├── backend/
+│   │   ├── cmd/
+│   │   │   └─ spndex/          # Entry point of the application main.go
+│   │   │
 │   │   └── internal/
 │   │       ├── auth/            # JWT authentication
 │   │       ├── config/          # Application configuration
