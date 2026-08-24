@@ -12,17 +12,16 @@ import (
 	"github.com/xanity-07/spndex/internal/model"
 	"github.com/xanity-07/spndex/internal/model/expense"
 	"github.com/xanity-07/spndex/internal/model/user"
-	"github.com/xanity-07/spndex/internal/repositories"
 	"github.com/xanity-07/spndex/internal/server"
 )
 
 type ExpenseService struct {
 	server      *server.Server
-	expenseRepo *repositories.ExpenseRepository
-	userRepo    *repositories.UserRepository
+	expenseRepo ExpenseRepository
+	userRepo    UserRepository
 }
 
-func NewExpenseService(s *server.Server, expenseRepo *repositories.ExpenseRepository, userRepo *repositories.UserRepository) *ExpenseService {
+func NewExpenseService(s *server.Server, expenseRepo ExpenseRepository, userRepo UserRepository) *ExpenseService {
 	return &ExpenseService{
 		server:      s,
 		expenseRepo: expenseRepo,
@@ -77,12 +76,7 @@ func (s *ExpenseService) GetExpenseByID(ctx *gin.Context, userID uuid.UUID, payl
 	return exp, nil
 }
 
-func (s *ExpenseService) UpdateExpense(
-	ctx *gin.Context,
-	userID uuid.UUID,
-	expenseID string,
-	payload *expense.UpdateExpense,
-) (*expense.Expense, error) {
+func (s *ExpenseService) UpdateExpense(ctx *gin.Context, userID uuid.UUID, expenseID string, payload *expense.UpdateExpense) (*expense.Expense, error) {
 	logger := middleware.GetLogger(ctx)
 
 	exp, err := s.expenseRepo.GetExpenseByID(ctx, userID, &expense.GetExpenseByID{ID: expenseID})
@@ -138,19 +132,19 @@ func (s *ExpenseService) UpdateExpense(
 	// Business event logs
 	eventLogger := middleware.GetLogger(ctx)
 	eventLogger.Info().
-		Str("event", "user_updated").
+		Str("event", "expense_updated").
 		Str("id", updatedExpense.ID.String()).
 		Str("user_id", updatedExpense.UserID).
 		Int("amount", int(updatedExpense.AmountCents)).
 		Str("category", string(updatedExpense.Category)).
-		Str("description", *updatedExpense.Description).
+		Interface("description", updatedExpense.Description).
 		Str("date", updatedExpense.Date).
 		Msg("Updated expense successfully")
 
 	return updatedExpense, nil
 }
 
-func (s ExpenseService) DeleteExpense(ctx *gin.Context, userID uuid.UUID, payload *expense.DeleteExpense) error {
+func (s *ExpenseService) DeleteExpense(ctx *gin.Context, userID uuid.UUID, payload *expense.DeleteExpense) error {
 	user, err := s.userRepo.GetUserByID(ctx, &user.GetUserByIDPayload{ID: userID.String()})
 	if err != nil {
 		code := "USER_NOT_FOUND"

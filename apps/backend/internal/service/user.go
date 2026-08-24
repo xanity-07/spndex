@@ -11,17 +11,16 @@ import (
 	"github.com/xanity-07/spndex/internal/middleware"
 	"github.com/xanity-07/spndex/internal/model"
 	"github.com/xanity-07/spndex/internal/model/user"
-	"github.com/xanity-07/spndex/internal/repositories"
 	"github.com/xanity-07/spndex/internal/server"
 	"github.com/xanity-07/spndex/internal/validation"
 )
 
 type UserService struct {
 	server   *server.Server
-	userRepo *repositories.UserRepository
+	userRepo UserRepository
 }
 
-func NewUserService(s *server.Server, userRepo *repositories.UserRepository) *UserService {
+func NewUserService(s *server.Server, userRepo UserRepository) *UserService {
 	return &UserService{
 		server:   s,
 		userRepo: userRepo,
