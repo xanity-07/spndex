@@ -24,7 +24,6 @@ The project is built around a Go REST API with PostgreSQL, Redis, OpenAPI, and a
 * **Frontend:** TypeScript, React
 * **Testing:** Go testing, Testcontainers
 * **Observability:** New Relic, structured logging, distributed tracing
-* **Infrastructure:** Docker
 
 ---
 
